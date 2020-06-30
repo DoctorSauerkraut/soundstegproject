@@ -3,9 +3,7 @@ Applying random mapping LSB on a wav file
 For regular LSB : put '0' in the key file
 """
 
-import wave
 import sys
-import getopt
 from pysndfx import AudioEffectsChain
 
 from utils import compareFiles, decodeKeyFile
@@ -53,9 +51,9 @@ if __name__ == "__main__":
         print("--- ATTACKING ----")
         fx = (
             AudioEffectsChain()
-            #.reverb()
-            #.delay()
-            #.phaser()
+            .reverb()
+            .delay()
+            .phaser()
             .delay()
         )
         outfile = fileName + "_del.wav"

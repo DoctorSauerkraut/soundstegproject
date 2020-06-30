@@ -10,13 +10,23 @@ def wmkToBin(wmkFile: str, sound):
     watermark_bin = ''
     for i in wmk_bytes:
         for j in range(0, 8):
-            # Nous faisons un & binaire entre le MSB et "128" pour savoir si nous écrivons un 1 ou 0
+            # Nous faisons un & binaire entre le MSB et "128" pour savoir si
+            #  nous écrivons un 1 ou 0
             # (Decalage de j pour s'occuper de chaque bit de l'octet)
             watermark_bin += '1' if ((i << j) & 128) > 0 else '0'
 
     print("Binary Watermark: " + watermark_bin)
 
     return watermark_bin
+
+
+def writeBinaryWmkFile(wmk, outputFile):
+    """
+    Writes the binary content of a wmk to a file
+    """
+    f = open(outputFile+".wmk", "w+")
+    f.write(wmk)
+    f.close()
 
 
 def compareFiles(inputFileA, inputFileB):

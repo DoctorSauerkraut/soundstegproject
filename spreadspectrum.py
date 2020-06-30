@@ -4,7 +4,7 @@ import numpy as np
 import random
 import sys
 
-from utils import wmkToBin
+from utils import wmkToBin, writeBinaryWmkFile
 
 
 def correlation(x, y):
@@ -54,7 +54,7 @@ def dss_apply(file: str, wmkFile: str, skey: int, alpha: float = 1):
 
     watermark_bin = wmkToBin(wmkFile, sound)
     print("Binary Watermark: " + watermark_bin)
-    
+
     sound.setpos(0)
     bloc_size = sound.getnframes() // len(watermark_bin)
     random.seed(skey)
@@ -97,6 +97,7 @@ def dss_apply(file: str, wmkFile: str, skey: int, alpha: float = 1):
     # On ajoute les derniers samples
     sound_new.writeframes(sound.readframes(sound.getnframes() - bloc_size * len(watermark_bin)))
 
+    
     return watermark_bin
 
 
@@ -133,6 +134,7 @@ def dss_read(file: str, skey: int, size_watermark: int):
 
         watermark_bin += '1' if correlation(cw, pn) < 0 else '0'
 
+    writeBinaryWmkFile(watermark_bin, file)
     return watermark_bin
 
 

@@ -1,6 +1,6 @@
 import wave
-from utils import wmkToBin
-import binascii
+from utils import wmkToBin, writeBinaryWmkFile
+
 masks = {0: 0xFE, 1: 0xFD, 2: 0xFB, 3: 0xF7}
 
 
@@ -82,8 +82,8 @@ def lsb_read(file: str, key: list, stop_on_end: bool = True):
 
         bin_str += str(bit)
         # Unpadding (unstable)
-        #if bin_str[-8:] == '00000000' and stop_on_end:
-            #break
+        # if bin_str[-8:] == '00000000' and stop_on_end:
+        #   break
     # print(bin_str)
 
     # Bin to STRING:
@@ -100,9 +100,7 @@ def lsb_read(file: str, key: list, stop_on_end: bool = True):
     for b in byte_list:
         binwmk += bin(b)[2:].zfill(8)
 
-    f = open(file+".wmk", "w+")
-    f.write(binwmk)
-    f.close()
+    writeBinaryWmkFile(binwmk, file)
 
     # Recreating the watermark
     watermark = bytes(byte_list)
