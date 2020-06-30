@@ -11,6 +11,8 @@ def correlation(x, y):
     """
     Calcule la correlation entre x et y
     """
+    # print("x :"+str(x))
+    # sprint("y :"+str(y))
     sumx = 0
     sumy = 0
     sumx_square = 0
@@ -27,10 +29,10 @@ def correlation(x, y):
     prod = nvalues * sum_product - (sumx * sumy)
     sumX = nvalues * sumx_square - sumx**2
     sumY = nvalues * sumy_square - sumy**2
-    
-    print("SumX :"+str(sumX))
-    print("SumY :"+str(sumY))
-    
+
+    # print("SumX :"+str(sumX))
+    # print("SumY :"+str(sumY))
+
     return prod / np.sqrt(float((sumX * sumY)))
 
 def dss_apply(file: str, wmkFile: str, skey: int, alpha: float = 1):
@@ -51,7 +53,8 @@ def dss_apply(file: str, wmkFile: str, skey: int, alpha: float = 1):
     channel_count = sound.getnchannels()
 
     watermark_bin = wmkToBin(wmkFile, sound)
-
+    print("Binary Watermark: " + watermark_bin)
+    
     sound.setpos(0)
     bloc_size = sound.getnframes() // len(watermark_bin)
     random.seed(skey)
@@ -70,10 +73,11 @@ def dss_apply(file: str, wmkFile: str, skey: int, alpha: float = 1):
             end = bs * (ij + ii * bloc_size + 1)
             byte_4 = read_temp[start:end]
 
-            toBytes = int.from_bytes(byte_4[j * sample_size:(j+1) * sample_size], "little")
-            int_4 = [toBytes for j in range(0, channel_count)]
+            int_4 = [int.from_bytes(byte_4[j * sample_size:(j+1) * sample_size],
+                     "little") for j in range(0, channel_count)]
 
-            adding_int = int(alpha * (2 * pseudonoise[ij] - 1) * (bit - 0.5) * (-2))  # Normalization
+            # Normalization
+            adding_int = int(alpha * (2 * pseudonoise[ij] - 1) * (bit - 0.5) * (-2))  
 
             # Calculate new byte following, actual sound, pseudo noise and alpha
             for k in range(0, channel_count):
@@ -105,8 +109,10 @@ def dss_read(file: str, skey: int, size_watermark: int):
     """
     inputFile = file + '.wav'
     sound = wave.open(inputFile, 'r')  # lecture d'un fichier audio
+
     print("Extracting from "+inputFile+" with DSS")
     sample_size = sound.getsampwidth()
+
 
     sound.setpos(0)
     bloc_size = sound.getnframes() // size_watermark
@@ -115,7 +121,7 @@ def dss_read(file: str, skey: int, size_watermark: int):
     watermark_bin = ''
 
     for ii in range(0, size_watermark):
-        pseudonoise = [random.randint(0,1) for j in range(0, bloc_size)]
+        pseudonoise = [random.randint(0, 1) for j in range(0, bloc_size)]
 
         # Recup Big sample
         pn = []

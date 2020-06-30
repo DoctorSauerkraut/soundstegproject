@@ -4,17 +4,17 @@ def wmkToBin(wmkFile: str, sound):
     Transforms watermark input file into binary stream
     """
     watermark_bin = ''
-    wmk_bytes = bytearray(str(open(wmkFile, "r").readlines()), encoding='utf-8')
+    wmkStream = open(wmkFile, "r")
+    wmk_bytes = bytearray(str(wmkStream.readlines()), encoding='utf-8')
 
-    for i in range(0, sound.getnframes()):
+    watermark_bin = ''
+    for i in wmk_bytes:
         for j in range(0, 8):
-            # The watermark is repeated all along to avoid snipping attack
-            wmk_bit = wmk_bytes[i % len(wmk_bytes)]
+            # Nous faisons un & binaire entre le MSB et "128" pour savoir si nous écrivons un 1 ou 0
+            # (Decalage de j pour s'occuper de chaque bit de l'octet)
+            watermark_bin += '1' if ((i << j) & 128) > 0 else '0'
 
-            # Logical and to determine the bit value
-            watermark_bin += '1' if ((wmk_bit << j) & 128) > 0 else '0'
-    # Padding
-    watermark_bin += '00000000'
+    print("Binary Watermark: " + watermark_bin)
 
     return watermark_bin
 

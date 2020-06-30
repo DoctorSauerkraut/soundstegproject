@@ -25,7 +25,6 @@ def lsb_apply(file: str, wmkFile: str, key: list):
     sound.setpos(0)
     water_cursor = 0
     for i in range(0, sound.getnframes()):
-
         bit = 1 if watermark_bin[water_cursor] == "1" else 0
 
         # At the end of the string : repeat

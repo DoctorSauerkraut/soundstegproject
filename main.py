@@ -21,9 +21,15 @@ if __name__ == "__main__":
     if(action == 'lw' or action == 'lr'):
         if(action == 'lw'):
             print("---- WRITING WITH DSS----")
-            wmkFile = sys.argv[4]
-            dss_apply(fileName, wmkFile, 42, 4096)
-            dss_read(fileName+"_watermarked_dss", 42, 7*8)
+            wmkFile = sys.argv[3]
+            a = dss_apply(fileName, wmkFile, 42, 4096)
+            b = dss_read(fileName+"_watermarked_dss", 42, 7*8)
+            error = 0
+            for i in range(0, min(len(a), len(b))):
+                if b[i] != a[i]:
+                    error += 1
+            error /= min(len(a), len(b))
+            print('Error rate: ', error)
 
         if(action == 'lr'):
             print("---- READING WITH DSS----")
