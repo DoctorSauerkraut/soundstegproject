@@ -1,6 +1,7 @@
 import wave
-
-masks = {0:0xFE, 1:0xFD, 2:0xFB, 3:0xF7}
+from utils import wmkToBin
+import binascii
+masks = {0: 0xFE, 1: 0xFD, 2: 0xFB, 3: 0xF7}
 
 
 def lsb_apply(file: str, wmkFile: str, key: list):
@@ -13,18 +14,7 @@ def lsb_apply(file: str, wmkFile: str, key: list):
     sound_new = wave.open(file + '_watermarked_lsb.wav', 'w')
     sound_new.setparams(sound.getparams())
 
-    watermark_bin = ''
-    wmk_bytes = bytearray(str(open(wmkFile, "r").readlines()), encoding='utf-8')
-
-    for i in range(0, sound.getnframes()):
-        for j in range(0, 8):
-            # The watermark is repeated all along to avoid snipping attack
-            wmk_bit = wmk_bytes[i % len(wmk_bytes)]
-
-            # Logical and to determine the bit value
-            watermark_bin += '1' if ((wmk_bit << j) & 128) > 0 else '0'
-    # Padding
-    watermark_bin += '00000000'
+    watermark_bin = wmkToBin(wmkFile, sound)
 
     # print("Binary Watermark: " + watermark_bin)
 
@@ -93,8 +83,8 @@ def lsb_read(file: str, key: list, stop_on_end: bool = True):
 
         bin_str += str(bit)
         # Unpadding (unstable)
-        if bin_str[-8:] == '00000000' and stop_on_end:
-            break
+        #if bin_str[-8:] == '00000000' and stop_on_end:
+            #break
     # print(bin_str)
 
     # Bin to STRING:
@@ -106,9 +96,17 @@ def lsb_read(file: str, key: list, stop_on_end: bool = True):
             if bin_str[i*8 + j] == '1':
                 byte_list[-1] += 2**(7-j)
 
+    # Conversion to binary for benchmarking purposes
+    binwmk = ""
+    for b in byte_list:
+        binwmk += bin(b)[2:].zfill(8)
+
+    f = open(file+".wmk", "w+")
+    f.write(binwmk)
+    f.close()
+
     # Recreating the watermark
     watermark = bytes(byte_list)
-    print("RAW WMK:"+str(watermark))
 
     try:
         watermark = watermark.decode("utf-8")
