@@ -16,8 +16,6 @@ def lsb_apply(file: str, wmkFile: str, key: list):
 
     watermark_bin = wmkToBin(wmkFile, sound)
 
-    # print("Binary Watermark: " + watermark_bin)
-
     print(sound.getparams())
     print("Total frames:"+str(sound.getnframes()))
     print("Ratio : 1/"+str(sound.getparams()[1]*8)+" bits")

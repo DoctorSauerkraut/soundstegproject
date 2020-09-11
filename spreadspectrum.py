@@ -9,7 +9,7 @@ from utils import wmkToBin, writeBinaryWmkFile
 
 def correlation(x, y):
     """
-    Calcule la correlation entre x et y
+    Computes the correlation between x and y
     """
     # print("x :"+str(x))
     # sprint("y :"+str(y))
@@ -37,11 +37,11 @@ def correlation(x, y):
 
 def dss_apply(file: str, wmkFile: str, skey: int, alpha: float = 1):
     """
-    Cache un watermark dans un fichier audio par methode de Direct Spread Spectrum
-    :param file: Le nom du fichier son d'entrée
-    :param watermark: Le Watermark a appliquer (File)
-    :param alpha: amplitude des pseudobruits
-    :param skey: cle de generation des bruits
+    Hides watermark in an audio file with DSS method
+    :param file: wav input file
+    :param watermark: watermark file
+    :param alpha: pseudo-noise amplitude
+    :param skey: noise generation key
     """
     sound = wave.open(file + '.wav', 'r')  # lecture d'un fichier audio
     outputFile = file + '_watermarked_dss.wav'
@@ -53,7 +53,6 @@ def dss_apply(file: str, wmkFile: str, skey: int, alpha: float = 1):
     channel_count = sound.getnchannels()
 
     watermark_bin = wmkToBin(wmkFile, sound)
-    print("Binary Watermark: " + watermark_bin)
 
     sound.setpos(0)
     bloc_size = sound.getnframes() // len(watermark_bin)
@@ -97,7 +96,6 @@ def dss_apply(file: str, wmkFile: str, skey: int, alpha: float = 1):
     # On ajoute les derniers samples
     sound_new.writeframes(sound.readframes(sound.getnframes() - bloc_size * len(watermark_bin)))
 
-    
     return watermark_bin
 
 
@@ -114,21 +112,20 @@ def dss_read(file: str, skey: int, size_watermark: int):
     print("Extracting from "+inputFile+" with DSS")
     sample_size = sound.getsampwidth()
 
-
     sound.setpos(0)
     bloc_size = sound.getnframes() // size_watermark
     random.seed(skey)
 
     watermark_bin = ''
 
-    for ii in range(0, size_watermark):
+    for _ in range(0, size_watermark):
         pseudonoise = [random.randint(0, 1) for j in range(0, bloc_size)]
 
         # Recup Big sample
         pn = []
         cw = []
         for i in range(0, bloc_size):
-            # Lire les samples en int
+            # Samples to int
             cw += [int.from_bytes(sound.readframes(1)[:sample_size], "little")]
             pn += [2 * pseudonoise[i] - 1]
 
@@ -136,6 +133,3 @@ def dss_read(file: str, skey: int, size_watermark: int):
 
     writeBinaryWmkFile(watermark_bin, file)
     return watermark_bin
-
-
-
