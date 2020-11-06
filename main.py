@@ -21,7 +21,7 @@ if __name__ == "__main__":
     fileName = sys.argv[3]
   
     if(action == 'r'):
-        print("---- READING WITH "+algo+" ----")
+        print("---- READING WITH "+algo+" AWESOME ----")
         wmk = ""
         if(algo == "DSS"):
             wmk = dss_read(fileName, 42, 4136)
