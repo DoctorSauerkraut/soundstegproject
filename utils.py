@@ -15,18 +15,30 @@ def wmkToBin(wmkFile: str, sound):
             # (Decalage de j pour s'occuper de chaque bit de l'octet)
             watermark_bin += '1' if ((i << j) & 128) > 0 else '0'
 
-    print("Binary Watermark: " + watermark_bin)
+    #print("Binary Watermark: " + watermark_bin)
 
     return watermark_bin
+
+    
+def text_from_bits(bits):
+    n = int(''.join(map(str, bits)), 2)
+    return (n.to_bytes((n.bit_length() + 7) // 8, 'big').decode()[2:])[:-2]
+
+def evaluateBrute(file: str, skey: int):
+    """ Evaluate the required time to perform a bruteforce
+    attack on a given file encoded with dss"""
+
 
 
 def writeBinaryWmkFile(wmk, outputFile):
     """
     Writes the binary content of a wmk to a file
     """
-    f = open(outputFile+".wmk", "w+")
+    fileName = outputFile+".wmk"
+    f = open(fileName, "wb+")
     f.write(wmk)
     f.close()
+    print("Watermark written in "+fileName)
 
 
 def compareFiles(inputFileA, inputFileB):

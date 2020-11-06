@@ -11,9 +11,11 @@ def lsb_apply(file: str, wmkFile: str, key: list):
     :param watermark: Le Watermark a appliquer (String)
     """
     sound = wave.open(file + '.wav', 'r')  # lecture d'un fichier audio
-    sound_new = wave.open(file + '_watermarked_lsb.wav', 'w')
+    outputFile = file + '_watermarked_lsb.wav'
+    sound_new = wave.open(outputFile, 'w')
     sound_new.setparams(sound.getparams())
-
+    
+    print("Applying LSB in "+outputFile)
     watermark_bin = wmkToBin(wmkFile, sound)
 
     print(sound.getparams())
@@ -26,14 +28,17 @@ def lsb_apply(file: str, wmkFile: str, key: list):
         bit = 1 if watermark_bin[water_cursor] == "1" else 0
 
         # At the end of the string : repeat
-        water_cursor = (water_cursor + 1) % len(watermark_bin)
-
+        water_cursor = (water_cursor + 1) #% len(watermark_bin)
+        if water_cursor == len(watermark_bin):
+            break
         byte_4 = sound.readframes(1)
 
         # Mapping the bit to add with the corresponding bit in the sample
         keyvalue = i % len(key)
         sound_new.writeframes(mapping(byte_4, bit, key[keyvalue])) 
 
+    print("--- LSB ENDED ---")
+    print("Output file : "+outputFile)
 
 def mapping(sample, wmk, keyval):
     """
@@ -60,18 +65,27 @@ def mapping(sample, wmk, keyval):
     # print("NEW:\t"+byte_new.hex())
     return byte_new
 
+def getnframes(file: str):
+    fileInput = file + '.wav'
+    sound = wave.open(fileInput, 'r')
+    return sound.getnframes()
 
-def lsb_read(file: str, key: list, stop_on_end: bool = True):
+def lsb_read(file: str, key: list, limit: int, stop_on_end: bool = True):
     """
     Decoding watermark with the given key
     """
-    sound = wave.open(file + '.wav', 'r')  # lecture d'un fichier audio
+    fileInput = file + '.wav'
+    sound = wave.open(fileInput, 'r')  # lecture d'un fichier audio
     sound.setpos(0)
-
+    print("Opening "+fileInput)
+    
     bin_str = ''
     watermark = ""
-
-    for i in range(0, sound.getnframes()):
+    if(limit == 0):
+        limit = sound.getnframes()
+        
+    for i in range(0, limit):
+        print(i)
         byte_4 = sound.readframes(1)
         keyval = i % len(key)
 
@@ -79,11 +93,12 @@ def lsb_read(file: str, key: list, stop_on_end: bool = True):
         bit = (byte_4[0] >> key[keyval]) % 2
 
         bin_str += str(bit)
+        
         # Unpadding (unstable)
         # if bin_str[-8:] == '00000000' and stop_on_end:
         #   break
     # print(bin_str)
-
+    
     # Bin to STRING:
     byte_list = []
     for i in range(0, len(bin_str)//8):
@@ -92,16 +107,13 @@ def lsb_read(file: str, key: list, stop_on_end: bool = True):
             # Binary to int
             if bin_str[i*8 + j] == '1':
                 byte_list[-1] += 2**(7-j)
-
-    # Conversion to binary for benchmarking purposes
-    binwmk = ""
-    for b in byte_list:
-        binwmk += bin(b)[2:].zfill(8)
-
-    writeBinaryWmkFile(binwmk, file)
-
+    
     # Recreating the watermark
     watermark = bytes(byte_list)
+    writeBinaryWmkFile(watermark, file)
+
+    return watermark
+    
 
     try:
         watermark = watermark.decode("utf-8")

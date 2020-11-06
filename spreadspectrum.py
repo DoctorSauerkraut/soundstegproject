@@ -4,7 +4,7 @@ import numpy as np
 import random
 import sys
 
-from utils import wmkToBin, writeBinaryWmkFile
+from utils import wmkToBin, writeBinaryWmkFile, text_from_bits
 
 
 def correlation(x, y):
@@ -35,6 +35,7 @@ def correlation(x, y):
 
     return prod / np.sqrt(float((sumX * sumY)))
 
+
 def dss_apply(file: str, wmkFile: str, skey: int, alpha: float = 1):
     """
     Hides watermark in an audio file with DSS method
@@ -46,7 +47,6 @@ def dss_apply(file: str, wmkFile: str, skey: int, alpha: float = 1):
     sound = wave.open(file + '.wav', 'r')  # lecture d'un fichier audio
     outputFile = file + '_watermarked_dss.wav'
     sound_new = wave.open(outputFile, 'w')
-    print("Applying DSS in "+outputFile)
 
     sound_new.setparams(sound.getparams())
     sample_size = sound.getsampwidth()
@@ -93,9 +93,13 @@ def dss_apply(file: str, wmkFile: str, skey: int, alpha: float = 1):
                 write_temp += byte_int.to_bytes(sample_size, "little")
 
     sound_new.writeframes(write_temp)
+    
     # On ajoute les derniers samples
     sound_new.writeframes(sound.readframes(sound.getnframes() - bloc_size * len(watermark_bin)))
-
+    
+    print("--- DSS ENDED ---")
+    print("Output file : "+outputFile)
+    
     return watermark_bin
 
 
@@ -113,6 +117,7 @@ def dss_read(file: str, skey: int, size_watermark: int):
     sample_size = sound.getsampwidth()
 
     sound.setpos(0)
+    nframes = sound.getnframes()
     bloc_size = sound.getnframes() // size_watermark
     random.seed(skey)
 
@@ -131,5 +136,8 @@ def dss_read(file: str, skey: int, size_watermark: int):
 
         watermark_bin += '1' if correlation(cw, pn) < 0 else '0'
 
-    writeBinaryWmkFile(watermark_bin, file)
+    print(text_from_bits(watermark_bin))
+    # writeBinaryWmkFile(watermark_bin, file)
     return watermark_bin
+
+
