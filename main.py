@@ -5,12 +5,14 @@ For regular LSB : put '0' in the key file
 
 import sys 
 import time
+import wave
 
 from pysndfx import AudioEffectsChain
 
 from utils import compareFiles, decodeKeyFile
-from lsb import lsb_apply, lsb_read, getnframes
+from lsb import lsb_apply, lsb_read, getnframes, lsb_decode
 from spreadspectrum import dss_apply, dss_read
+
 
 #
 if __name__ == "__main__":
@@ -21,7 +23,7 @@ if __name__ == "__main__":
     fileName = sys.argv[3]
   
     if(action == 'r'):
-        print("---- READING WITH "+algo+" AWESOME ----")
+        print("---- READING WITH "+algo+" ----")
         wmk = ""
         if(algo == "DSS"):
             wmk = dss_read(fileName, 42, 4136)
@@ -79,21 +81,25 @@ if __name__ == "__main__":
         elif(algo == "LSB"):
             keyFile = sys.argv[4]
             key = decodeKeyFile(keyFile)
-            frames = getnframes(fileName)
+            
+            fileInput = fileName + '.wav'
+            sound = wave.open(fileInput, 'r')  # lecture d'un fichier audio
+            sound.setpos(0)
+            print("Opening "+fileInput)
 
-            evalTimeStart = time.time_ns()
-            wmk = lsb_read(fileName, key, 1, True)
-            evalTimeEnd = time.time_ns()
+            for i in range(0, 10):
+                evalTimeStart = time.time_ns()
+                # Decoding 1 bit
+                watermark = lsb_decode(1, sound, key)
+                evalTimeEnd = time.time_ns()
+
+            print("Key length:"+str(len(key)))
+            print("Key maximal bit:"+str(max(key)))
+            evalTimeDelta = (evalTimeEnd - evalTimeStart)/10
+            evalTimeDelta = evalTimeDelta*(4**(len(key)*max(key)))/1000000000
             
-            evalTimeDelta = (evalTimeEnd - evalTimeStart) * (4**frames) 
-            estimatedTime = evalTimeDelta
-            
-            print("DBG:0")
-            strETime = str(estimatedTime)
-            print("DBG:1")
-            if(len(strETime) > 15):
-                strETime = strETime[0:4]+"."+strETime[5:10]+" *10^"+str(len(strETime) - 12)
-            print("DBG:2")
+            strETime = str(evalTimeDelta)
+
         print("Estimated required time : "+strETime+" seconds")    
         
     print("---- DONE ----")

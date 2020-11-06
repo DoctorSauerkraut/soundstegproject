@@ -1,4 +1,5 @@
 import wave
+import time
 from utils import wmkToBin, writeBinaryWmkFile
 
 masks = {0: 0xFE, 1: 0xFD, 2: 0xFB, 3: 0xF7}
@@ -70,6 +71,34 @@ def getnframes(file: str):
     sound = wave.open(fileInput, 'r')
     return sound.getnframes()
 
+def lsb_decode(limit: int, sound, key: list):
+    bin_str = ''
+    watermark = ""
+    if(limit == 0):
+        limit = sound.getnframes()
+
+    for i in range(0, limit):
+        byte_4 = sound.readframes(1)
+        keyval = i % len(key)
+
+        # We get the random mapped bit using the same mask
+        bit = (byte_4[0] >> key[keyval]) % 2
+
+        bin_str += str(bit)
+
+    # Bin to STRING:
+    byte_list = []
+    for i in range(0, len(bin_str)//8):
+        byte_list.append(0)
+        for j in range(0, 8):
+            # Binary to int
+            if bin_str[i*8 + j] == '1':
+                byte_list[-1] += 2**(7-j)
+
+    # Recreating the watermark
+    watermark = bytes(byte_list)
+    return watermark
+
 def lsb_read(file: str, key: list, limit: int, stop_on_end: bool = True):
     """
     Decoding watermark with the given key
@@ -79,45 +108,8 @@ def lsb_read(file: str, key: list, limit: int, stop_on_end: bool = True):
     sound.setpos(0)
     print("Opening "+fileInput)
     
-    bin_str = ''
-    watermark = ""
-    if(limit == 0):
-        limit = sound.getnframes()
-        
-    for i in range(0, limit):
-        print(i)
-        byte_4 = sound.readframes(1)
-        keyval = i % len(key)
-
-        # We get the random mapped bit using the same mask
-        bit = (byte_4[0] >> key[keyval]) % 2
-
-        bin_str += str(bit)
-        
-        # Unpadding (unstable)
-        # if bin_str[-8:] == '00000000' and stop_on_end:
-        #   break
-    # print(bin_str)
-    
-    # Bin to STRING:
-    byte_list = []
-    for i in range(0, len(bin_str)//8):
-        byte_list.append(0)
-        for j in range(0, 8):
-            # Binary to int
-            if bin_str[i*8 + j] == '1':
-                byte_list[-1] += 2**(7-j)
-    
     # Recreating the watermark
-    watermark = bytes(byte_list)
+    watermark = lsb_decode(limit, sound, key)
     writeBinaryWmkFile(watermark, file)
-
-    return watermark
-    
-
-    try:
-        watermark = watermark.decode("utf-8")
-    except:
-        print("Watermark corrupted")
 
     return watermark
