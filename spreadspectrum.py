@@ -30,9 +30,6 @@ def correlation(x, y):
     sumX = nvalues * sumx_square - sumx**2
     sumY = nvalues * sumy_square - sumy**2
 
-    # print("SumX :"+str(sumX))
-    # print("SumY :"+str(sumY))
-
     return prod / np.sqrt(float((sumX * sumY)))
 
 
@@ -50,7 +47,11 @@ def dss_apply(file: str, wmkFile: str, skey: int, alpha: float = 1):
 
     sound_new.setparams(sound.getparams())
     sample_size = sound.getsampwidth()
+
+    # Number of channels
+    # One for mono, two for stereo, ...
     channel_count = sound.getnchannels()
+    bs = sample_size * channel_count
 
     watermark_bin = wmkToBin(wmkFile, sound)
 
@@ -64,38 +65,44 @@ def dss_apply(file: str, wmkFile: str, skey: int, alpha: float = 1):
     for ii in range(0, len(watermark_bin)):
         bit = 1 if watermark_bin[ii] == "1" else 0
 
+        # Generating white noise
         pseudonoise = [random.randint(0, 1) for j in range(0, bloc_size)]
 
         for ij in range(0, bloc_size):
-            bs = sample_size * channel_count
             start = bs * (ij + ii * bloc_size)
             end = bs * (ij + ii * bloc_size + 1)
-            byte_4 = read_temp[start:end]
+            # Current byte read from actual sound
+            currByte = read_temp[start:end]
 
-            int_4 = [int.from_bytes(byte_4[j * sample_size:(j+1) * sample_size],
+            # Converting current byte to int list, one item per channel
+            int_4 = [int.from_bytes(currByte[j * sample_size:(j+1) * sample_size],
                      "little") for j in range(0, channel_count)]
-
+            
             # Normalization
             adding_int = int(alpha * (2 * pseudonoise[ij] - 1) * (bit - 0.5) * (-2))  
 
-            # Calculate new byte following, actual sound, pseudo noise and alpha
+            # Calculate new byte from actual sound, pseudo noise and alpha
             for k in range(0, channel_count):
                 byte_int = int_4[k]
 
+                # Adding message and pseudonoise to channel
                 byte_int += adding_int
+
+                # If obtained byte is off limits
                 if byte_int < 0:
                     byte_int = 0
 
                 if byte_int >= (1 << 8*sample_size):
                     byte_int = (1 << 8*sample_size) - 1
 
-                # Else
+                # Re-converting modified int to bytes
                 write_temp += byte_int.to_bytes(sample_size, "little")
 
+    # Writing the modified bytes in sound frames
     sound_new.writeframes(write_temp)
     
-    # On ajoute les derniers samples
-    sound_new.writeframes(sound.readframes(sound.getnframes() - bloc_size * len(watermark_bin)))
+    # Writing the unmodified frames
+    sound_new.writeframes(sound.readframes(sound.getnframes() - (bloc_size * len(watermark_bin))))
     
     print("--- DSS ENDED ---")
     print("Output file : "+outputFile)
