@@ -30,8 +30,7 @@ if __name__ == "__main__":
         elif(algo == "LSB"):
             keyFile = sys.argv[4]
             key = decodeKeyFile(keyFile)
-            wmk = lsb_read(fileName, key, 0, True)
-        # print(wmk)
+            wmk = lsb_read(fileName, key, 0)
 
     elif(action == 'w'):
         print("---- WRITING WITH "+algo+" ----")
@@ -41,7 +40,7 @@ if __name__ == "__main__":
         elif(algo == "LSB"):
             keyFile = sys.argv[5]
             key = decodeKeyFile(keyFile)
-            lsb_apply(fileName, wmkFile, key)
+            lsb_apply(fileName, wmkFile, key, False)
 
     elif(action == 'a'):
         print("--- ATTACKING ----")
@@ -58,8 +57,9 @@ if __name__ == "__main__":
         fx(fileName + ".wav", outfile)
 
     elif(action == 'cmp'):
-        fileNameB = sys.argv[3]
-        print("Comparing ratio :"+str(compareFiles(fileName, fileNameB)))
+        fileNameB = sys.argv[2]
+        print("Comparing "+fileName+" and "+fileNameB)
+        print("Proximity ratio :"+str(compareFiles(fileName, fileNameB))+" %")
 
     elif(action == 'e'):
         charsize = 1000
@@ -83,7 +83,9 @@ if __name__ == "__main__":
             key = decodeKeyFile(keyFile)
             
             fileInput = fileName + '.wav'
-            sound = wave.open(fileInput, 'r')  # lecture d'un fichier audio
+
+            # Input audio file reading
+            sound = wave.open(fileInput, 'r')  
             sound.setpos(0)
             print("Opening "+fileInput)
 

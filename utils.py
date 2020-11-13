@@ -1,4 +1,3 @@
-
 def wmkToBin(wmkFile: str, sound):
     """
     Transforms watermark input file into binary stream
@@ -14,8 +13,6 @@ def wmkToBin(wmkFile: str, sound):
             #  nous écrivons un 1 ou 0
             # (Decalage de j pour s'occuper de chaque bit de l'octet)
             watermark_bin += '1' if ((i << j) & 128) > 0 else '0'
-
-    #print("Binary Watermark: " + watermark_bin)
 
     return watermark_bin
 
@@ -46,24 +43,28 @@ def compareFiles(inputFileA, inputFileB):
     Generical file comparison
     Used to compare the number of common bits between two watermarks
     """
-    fileA = open(inputFileA, "r")
-    fileB = open(inputFileB, "r")
+    fileA = open(inputFileA, "rb")
+    fileB = open(inputFileB, "rb")
 
     diff = 0
     total = 0
+    cA = fileA.read(1)
+    cB = fileB.read(1)
 
-    while 1:
-        cA = fileA.read(1)
-        cB = fileB.read(1)
-
+    while (cA and cB):  
+        print(hex(int.from_bytes(cA, "little")))
+        print(hex(int.from_bytes(cB, "little")))
+        difference = (int.from_bytes(cA, "little") - int.from_bytes(cB, "little")) % 256
+        print(str(difference))
         if(cA != cB):
             diff += 1
         total += 1
+        
+        cA = fileA.read(1)
+        cB = fileB.read(1)
 
-        if(cA == '' or cB == ''):
-            break
-
-    return (diff*100/total)
+    print(total)
+    return ((total-diff)*100/total)
 
 
 def decodeKeyFile(keyFile):

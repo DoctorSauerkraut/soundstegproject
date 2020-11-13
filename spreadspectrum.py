@@ -144,7 +144,7 @@ def dss_read(file: str, skey: int, size_watermark: int):
         watermark_bin += '1' if correlation(cw, pn) < 0 else '0'
 
     print(text_from_bits(watermark_bin))
-    # writeBinaryWmkFile(watermark_bin, file)
+    
     return watermark_bin
 
 
