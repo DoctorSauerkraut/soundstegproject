@@ -7,6 +7,8 @@ from lsb import lsb_apply, lsb_read, getnframes, lsb_decode
 from utils import compareFiles, decodeKeyFile
 from spreadspectrum import dss_apply, dss_read
 
+import utilsFMA
+
 ###################################
 def mp3_to_wav(inputdir, **kwargs):
 
@@ -36,31 +38,40 @@ def selectSounds_FMA(input_dir, input_file, genre_dir, genre_catalog, **kwargs):
 
     # --- convert genre to numeric value
     genres_list = pd.read_csv(genre_dir+genre_catalog)
-    genre_id = str(int(np.array(genres_list.where(genres_list['title']==genre).dropna(how='all').dropna(axis=1))))
+    print(genres_list)
+    #genre_id = str(int(np.array(genres_list.where(genres_list['title']==genre).dropna(how='all').dropna(axis=1))[0]))
+    genre_id = int(np.array(genres_list['genre_id'][genres_list.where(genres_list['title']==genre).dropna(how='all').dropna(axis=1).index]))
+
+    print(genre_id)
+    print(genre)
 
     # --- load metadata
-    tracks = utilsFMA.load(dir_metadata + 'tracks.csv')
+    tracks = utilsFMA.load(input_dir + 'tracks.csv')
 
     tab_id_duration = tracks['track', 'duration']
     track_ids = tab_id_duration.index
     track_durations = tab_id_duration.values
 
     tab_id_genres = np.array(tracks['track', 'genres'])
+    if verbose:
+        print('looking for genre \'' + genre + '\', that is genre id #' + str(genre_id))
 
     # --- loop over the metadata, select one genre en restrict to a given duration
     number_of_entries = 0; number_of_matching_entries = 0
     list_matching_keys = []
     for index in range(len(tab_id_duration)):
-        if verbose:
-            pass
         current_genre = tab_id_genres[index]
         current_duration = track_durations[index]
+        if verbose:
+            print('duration is ' + str(current_duration) + ' --- genre is ' + str(current_genre))
         for current_genre_item in current_genre:
+            #print('sought genre is ' + str(genre_id) + ' --- current genre is ' + str(current_genre_item))
+            #print(str(type(current_genre_item)) + ' --- ' + str(type(genre_id)))
             if current_genre_item == genre_id:
+                #print('plop')
                 if current_duration > min_dur and current_duration < max_dur:
-                    #print(key)
                     number_of_matching_entries+=1
-                    list_matching_keys.append(tab_ids[index])
+                    list_matching_keys.append(track_ids[index])
         number_of_entries+=1
 
     print('There were ' + str(number_of_entries) + ' entries in the data base')
@@ -70,7 +81,12 @@ def selectSounds_FMA(input_dir, input_file, genre_dir, genre_catalog, **kwargs):
     return list_matching_keys,track_ids
 
 ###################################
-def copySounds_FMA(list_keys_to_files,catalog,source_dir,destination_dir):
+def copySounds_FMA(list_keys_to_files,catalog,source_dir,destination_dir, **kwargs):
+
+    verbose=kwargs.get('verbose', 0)
+
+    nb_sounds_copied = 0
+
     # --- Retrieve the corresponding files and store them locally
     for numfile in range(len(list_keys_to_files)):
         current_id = list_keys_to_files[numfile]
@@ -78,15 +94,18 @@ def copySounds_FMA(list_keys_to_files,catalog,source_dir,destination_dir):
         current_path = os.path.join(source_dir, current_id_str[:3], current_id_str + '.mp3')
 
         if os.path.exists(current_path):
-            print('Found file ' + str(current_path) + '! -> retrieving it...')
+            if verbose:
+                print('Found file ' + str(current_path) + '! -> retrieving it...')
             os.system('cp ' + current_path + ' ' + destination_dir + str(current_id) + '.mp3')
+            nb_sounds_copied+=1
         else:
-            print('File ' + str(current_path) + ' not found... trying next one')
+            if verbose:
+                print('File ' + str(current_path) + ' not found... trying next one')
 
     #f = utilsFMA.get_audio_path(dir_downloaded_db, 55123) # /!\ --> change 2 with the key that is wanted
     #filename = f.split('/')[-1]
     #path = '/'.join(f.split('/')[:-1]) + '/'
-
+    print('There were ' + str(nb_sounds_copied) + ' sounds found and copied')
     return 0
 
 ###################################
@@ -134,17 +153,25 @@ def selectSounds_MTG(input_dir, input_file, **kwargs):
     return list_matching_keys, tracks
 
 ###################################
-def copySounds_MTG(list_keys_to_files,catalog,source_dir,destination_dir):
+def copySounds_MTG(list_keys_to_files,catalog,source_dir,destination_dir, **kwargs):
+
+    verbose=kwargs.get('verbose', 0)
+
+    nb_sounds_copied = 0
     # --- Retrieve the corresponding files and store them locally
     for numfile in range(len(list_keys_to_files)):
         current_id = list_keys_to_files[numfile]
         current_path = source_dir + catalog[current_id]['path']
         if os.path.exists(current_path):
-            print('Found file ' + str(current_path) + '! -> retrieving it...')
+            if verbose:
+                print('Found file ' + str(current_path) + '! -> retrieving it...')
             os.system('cp ' + current_path + ' ' + destination_dir + str(current_id) + '.mp3')
+            nb_sounds_copied+=1
         else:
-            print('File ' + str(current_path) + ' not found... trying next one')
+            if verbose:
+                print('File ' + str(current_path) + ' not found... trying next one')
 
+    print('There were ' + str(nb_sounds_copied) + ' sounds found and copied')
     return 0
 
 
