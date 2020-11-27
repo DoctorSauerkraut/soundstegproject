@@ -11,12 +11,6 @@ import glob
 import time
 import wave
 
-#from matplotlib import pyplot as plt
-
-from lsb import lsb_apply, lsb_read, getnframes, lsb_decode
-from utils import compareFiles, decodeKeyFile
-from spreadspectrum import dss_apply, dss_read
-
 from utils_audio import mp3_to_wav, copySounds_MTG, encodeInSound
 
 ###################################

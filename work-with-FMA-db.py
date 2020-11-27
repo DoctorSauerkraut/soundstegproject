@@ -1,10 +1,7 @@
 ###################################
 # LOAD MODULES
-import audioread
 import os
 import glob
-import pandas as pd
-import numpy as np
 
 from utils_audio import mp3_to_wav, selectSounds_FMA, copySounds_FMA, encodeInSound
 
