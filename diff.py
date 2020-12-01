@@ -157,8 +157,10 @@ def main( argv ):
 
     print("Number of errors:"+str(errors))
     fileSize = getSize(codecs.open( filename1, 'r', 'utf-8', errors='ignore' ))
-    rate = ((fileSize-errors)*100/fileSize)
+    if(errors < fileSize):
+        rate = ((fileSize-errors)*100/fileSize)
+    else:
+        rate = 0
     print("Similarity rate:"+str(rate)+" %")
-
 if __name__ == "__main__":
     main(sys.argv[1:])

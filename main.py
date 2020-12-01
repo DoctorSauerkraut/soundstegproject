@@ -54,8 +54,6 @@ if __name__ == "__main__":
             AudioEffectsChain()
             .reverb()
             .delay()
-            .phaser()
-            .delay()
         )
         outfile = fileName + "_del.wav"
 
