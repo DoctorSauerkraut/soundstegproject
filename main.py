@@ -14,7 +14,7 @@ from lsb import lsb_apply, lsb_read, getnframes, lsb_decode
 from spreadspectrum import dss_apply, dss_read
 
 
-#
+# Entry point
 if __name__ == "__main__":
     startTime = time.time_ns()
 
@@ -35,12 +35,18 @@ if __name__ == "__main__":
     elif(action == 'w'):
         print("---- WRITING WITH "+algo+" ----")
         wmkFile = sys.argv[4]
+
+        sound = wave.open(fileName + '.wav', 'r')  # lecture d'un fichier audio
+        outputFile = fileName + "_watermarked_"+algo+".wav"
+
+        print("Output file:\t"+outputFile)
+
         if(algo == "DSS"):
-            a = dss_apply(fileName, wmkFile, 42, 4096)
+            a = dss_apply(fileName, wmkFile, 42, outputFile, sound, 500)
         elif(algo == "LSB"):
             keyFile = sys.argv[5]
             key = decodeKeyFile(keyFile)
-            lsb_apply(fileName, wmkFile, key, False)
+            lsb_apply(fileName, wmkFile, key, False, outputFile, sound)    
 
     elif(action == 'a'):
         print("--- ATTACKING ----")
@@ -58,8 +64,7 @@ if __name__ == "__main__":
 
     elif(action == 'cmp'):
         fileNameB = sys.argv[2]
-        print("Comparing "+fileName+" and "+fileNameB)
-        print("Proximity ratio :"+str(compareFiles(fileName, fileNameB))+" %")
+        compareFiles(fileName, fileNameB)
 
     elif(action == 'e'):
         charsize = 1000

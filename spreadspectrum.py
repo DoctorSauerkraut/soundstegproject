@@ -4,7 +4,7 @@ import numpy as np
 import random
 import sys
 
-from utils import wmkToBin, writeBinaryWmkFile, text_from_bits
+from utils import *
 
 
 def correlation(x, y):
@@ -33,7 +33,7 @@ def correlation(x, y):
     return prod / np.sqrt(float((sumX * sumY)))
 
 
-def dss_apply(file: str, wmkFile: str, skey: int, alpha: float = 1):
+def dss_apply(file: str, wmkFile: str, skey: int, outputFile: str, sound, alpha: float = 1):
     """
     Hides watermark in an audio file with DSS method
     :param file: wav input file
@@ -41,11 +41,6 @@ def dss_apply(file: str, wmkFile: str, skey: int, alpha: float = 1):
     :param alpha: pseudo-noise amplitude
     :param skey: noise generation key
     """
-    sound = wave.open(file + '.wav', 'r')  # lecture d'un fichier audio
-    outputFile = file + '_watermarked_dss.wav'
-    sound_new = wave.open(outputFile, 'w')
-
-    sound_new.setparams(sound.getparams())
     sample_size = sound.getsampwidth()
 
     # Number of channels
@@ -62,6 +57,9 @@ def dss_apply(file: str, wmkFile: str, skey: int, alpha: float = 1):
     write_temp = bytearray(b'')
     read_temp = sound.readframes(-1)
 
+    sound_new = wave.open(outputFile, 'w')
+    sound_new.setparams(sound.getparams())
+
     for ii in range(0, len(watermark_bin)):
         bit = 1 if watermark_bin[ii] == "1" else 0
 
@@ -75,7 +73,7 @@ def dss_apply(file: str, wmkFile: str, skey: int, alpha: float = 1):
             currByte = read_temp[start:end]
 
             # Converting current byte to int list, one item per channel
-            int_4 = [int.from_bytes(currByte[j * sample_size:(j+1) * sample_size],
+            currInt = [int.from_bytes(currByte[j * sample_size:(j+1) * sample_size],
                      "little") for j in range(0, channel_count)]
             
             # Normalization
@@ -83,7 +81,7 @@ def dss_apply(file: str, wmkFile: str, skey: int, alpha: float = 1):
 
             # Calculate new byte from actual sound, pseudo noise and alpha
             for k in range(0, channel_count):
-                byte_int = int_4[k]
+                byte_int = currInt[k]
 
                 # Adding message and pseudonoise to channel
                 byte_int += adding_int
@@ -103,10 +101,18 @@ def dss_apply(file: str, wmkFile: str, skey: int, alpha: float = 1):
     
     # Writing the unmodified frames
     sound_new.writeframes(sound.readframes(sound.getnframes() - (bloc_size * len(watermark_bin))))
-    
-    print("--- DSS ENDED ---")
-    print("Output file : "+outputFile)
-    
+
+    print("--- STATS ---")
+    nframes = sound.getnframes()
+    maxcarriage = int(nframes*16/(channel_count))
+    modifiedFrames = nframes * channel_count * bloc_size
+    diffRatio = (modifiedFrames*100/(nframes*8))
+
+    print("Carriage:\t" + str(len(watermark_bin)) + " bits")
+    print("Max carriage:\t" + str(maxcarriage) + " bits")
+    print("Mod. frames:\t" + str(modifiedFrames))
+    print("Mod. bits:\t" + str(modifiedFrames*channel_count)) 
+    compareFiles(file+".wav", outputFile)
     return watermark_bin
 
 

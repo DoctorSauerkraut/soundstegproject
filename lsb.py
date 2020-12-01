@@ -1,30 +1,27 @@
 import wave
 import time
-from utils import wmkToBin, writeBinaryWmkFile
+from utils import *
 
 masks = {0: 0xFE, 1: 0xFD, 2: 0xFB, 3: 0xF7}
 ENDTAG = "00000000"
 
 
-def lsb_apply(file: str, wmkFile: str, key: list, repeat: bool):
+def lsb_apply(file: str, wmkFile: str, key: list, repeat: bool, outputFile: str, sound):
     """
     Hides a watermark inside an input wav file
     :param file: input audio file
     :param watermark: watermark string
     """
-    sound = wave.open(file + '.wav', 'r')  # lecture d'un fichier audio
-    outputFile = file + '_watermarked_lsb.wav'
-    sound_new = wave.open(outputFile, 'w')
-    sound_new.setparams(sound.getparams())
-
-    print("Applying LSB in "+outputFile)
     watermark_bin = wmkToBin(wmkFile, sound) + ENDTAG
     nframes = sound.getnframes()
-    print(sound.getparams())
 
     sound.setpos(0)
     water_cursor = 0
     modifiedFrames = 0
+
+    sound_new = wave.open(outputFile, 'w')
+    sound_new.setparams(sound.getparams())
+
     for i in range(0, nframes):
         # Reads current sound frame
         currentFrame = sound.readframes(1)
@@ -46,15 +43,14 @@ def lsb_apply(file: str, wmkFile: str, key: list, repeat: bool):
     print("---- STATS ----")
     nbchannels = sound.getparams()[0]
     ratio = 8*nbchannels
-    print("Carriage:\t\t" + str(len(watermark_bin)) + " bits")
+    print("Carriage:\t" + str(len(watermark_bin)) + " bits")
     print("Max carriage:\t1 bit/" + str(ratio) + "=" + str(nframes)+ " bits")
     print("Mod. frames:\t" + str(modifiedFrames))
     print("Mod. bits:\t" + str(modifiedFrames*nbchannels)) 
     diffRatio = (modifiedFrames*100/(nframes*8))
-    print("Difference ratio (bit to bit):" + str(diffRatio) +" %")   
-    
-    print("Output file : "+outputFile)
+    compareFiles(file + '.wav', outputFile)  
 
+    return watermark_bin
 
 def mapping(sample, wmk, keyval):
     """

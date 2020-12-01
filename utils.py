@@ -1,3 +1,6 @@
+import hashlib
+
+
 def wmkToBin(wmkFile: str, sound):
     """
     Transforms watermark input file into binary stream
@@ -39,6 +42,10 @@ def writeBinaryWmkFile(wmk, outputFile):
 
 
 def compareFiles(inputFileA, inputFileB):
+    print("Comparing "+inputFileA+" and "+inputFileB)
+    sha1a = hashlib.sha1()
+    sha1b = hashlib.sha1()
+
     """
     Generical file comparison
     Used to compare the number of common bits between two watermarks
@@ -51,20 +58,54 @@ def compareFiles(inputFileA, inputFileB):
     cA = fileA.read(1)
     cB = fileB.read(1)
 
-    while (cA and cB):  
-        print(hex(int.from_bytes(cA, "little")))
-        print(hex(int.from_bytes(cB, "little")))
-        difference = (int.from_bytes(cA, "little") - int.from_bytes(cB, "little")) % 256
-        print(str(difference))
-        if(cA != cB):
-            diff += 1
-        total += 1
-        
+    # Difference by number of bits
+    bitdiff = 0
+    # Total number of bytes
+    byteTot = 1
+    # Total weight
+    weightTot = 1
+    # Difference by weight of bits
+    weightDiff = 0
+
+    while (cA and cB):
+        byteTot = byteTot + 1
+        weightTot = weightTot + 511  # Max weight on 8 bits
+        nbDiff = numberofBitsDiff(cA, cB)
+        bitdiff = bitdiff + nbDiff[0]
+        weightDiff = weightDiff + nbDiff[1]
+
         cA = fileA.read(1)
         cB = fileB.read(1)
+        sha1a.update(cA)
+        sha1b.update(cB)
+        
+    ratio = bitdiff * 100 / (byteTot*8)
+    ratioWght = weightDiff * 100 / weightTot
 
-    print(total)
-    return ((total-diff)*100/total)
+    print(str(ratio)+" % bits difference ratio")
+    print(str(ratioWght)+" % weighted difference ratio")
+    print("SHA1 input file:\t"+str(sha1a.hexdigest()))
+    print("SHA1 output file:\t"+str(sha1b.hexdigest()))
+
+    return ratio
+
+def numberofBitsDiff(byteA, byteB):
+    """
+    Returns the number of different bits between two bytes
+    """
+    bitdiff = 0
+    weightDiff = 0
+
+    difference = (int.from_bytes(byteA, "little") - int.from_bytes(byteB, "little")) % 256
+
+    if (difference != 0):
+        for i in range(8,-1,-1):
+            if (difference >= 2**i):
+                difference = difference - 2**i
+                bitdiff = bitdiff + 1
+                weightDiff = weightDiff + (2**i)
+
+    return (bitdiff, weightDiff)
 
 
 def decodeKeyFile(keyFile):
