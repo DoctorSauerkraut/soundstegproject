@@ -1,13 +1,10 @@
 #!/usr/bin/env python3
-# TODO : Refactoring main
 # TODO : Solving diff problems
 
-import sys 
 import time
 import wave
 import argparse
-
-from pysndfx import AudioEffectsChain
+import os
 
 from utils import compareFiles, decodeKeyFile
 from lsb import lsb_apply, lsb_read, getnframes, lsb_decode
@@ -18,14 +15,15 @@ def apply_tag(algo: str, fileName, wmkFile, keyFile=None):
     sound = wave.open(fileName + '.wav', 'r')  # lecture d'un fichier audio
     outputFile = fileName + "_watermarked_"+algo+".wav"
     print("---- WRITING WITH "+algo+" ----")
+    print("Input file:\t\t"+fileName+".wav")
     print("Output file:\t"+outputFile)    
-
+    print("Watermark file:\t"+wmkFile)
+    
     if(algo == "DSS"):
         a = dss_apply(fileName, wmkFile, 42, outputFile, sound, 500)
     elif(algo == "LSB"):
         if(keyFile is None):
-            print("Please specify keyfile with -k")
-            return
+            key = "0"
         key = decodeKeyFile(keyFile)
         lsb_apply(fileName, wmkFile, key, False, outputFile, sound)
     else:
@@ -44,6 +42,22 @@ def read_tag(algo, fileName, keyFile=None):
         wmk = lsb_read(fileName, key, 0)
 
     return wmk
+
+def attack_signal(inputFile, outputFile):
+    """
+    Applies a specific effect on a music file
+    :param inputFile : file to apply effect on
+    :param outputFile : modified file
+    """
+    print("---- Attacking signal with echo effect ----")
+    print("Input file:\t\t"+inputFile)
+    print("Output file:\t"+outputFile)
+
+    atk = "echo 0.1 0.1 1 0.1"
+
+    cmd = "sox "+inputFile+" "+outputFile+" "+atk
+    os.system(cmd)
+
 
 # Entry point
 def main():
@@ -96,6 +110,14 @@ def main():
             print("Please specify files to compare with --fa and --fb")
             return 
         compareFiles(args.filea, args.fileb)
+    elif(action == 'atk'):
+        if(not args.input):
+            print("Please specify input file raw name with -i")
+            return
+        inputFile = args.input + '.wav'
+        outputFile = args.input + "_atk_echo.wav"
+
+        attack_signal(inputFile, outputFile)
 
     elif(action == 'e'):
         charsize = 1000

@@ -29,6 +29,8 @@ from collections import defaultdict
 import sys
 import codecs
 import os
+
+from utils import *
 STATE_PASSING_1ST = 0
 STATE_PASSING_2ND = 1
 STATE_MATCH = 2
@@ -48,13 +50,7 @@ def u_intern( value ):
         return u_intern_dict[value]
     u_intern_dict[value]=value
     return value
-
-
-def getSize(fileobject):
-    fileobject.seek(0,2) # move the cursor to the end of the file
-    size = fileobject.tell()
-    return size
-
+  
 def main( argv ):
     filename1 = None
     filename2 = None
@@ -78,6 +74,11 @@ def main( argv ):
     if not filename1 or not filename2:
         print( "Usage: JLDiff file1 file2 [--same_size]" )
         exit(1)
+    
+    file1Size = getSize(open(filename1, 'rb'))
+    file2Size = getSize(open(filename2, 'rb'))
+    loops = file1Size*file2Size
+    prog = 0
 
     with open( filename1, 'rb') as fileHandle1:
         with open( filename2, 'rb') as fileHandle2:
@@ -117,6 +118,9 @@ def main( argv ):
 
                 columnIndex = 1
                 for char2 in file2:
+                    progress(prog,loops)
+                    prog = prog+1
+
                     thisIndex = lineCompIndex()
 
                     if(char2 == char1):

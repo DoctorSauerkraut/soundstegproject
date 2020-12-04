@@ -59,7 +59,7 @@ def dss_apply(file: str, wmkFile: str, skey: int, outputFile: str, sound, alpha:
 
     sound_new = wave.open(outputFile, 'w')
     sound_new.setparams(sound.getparams())
-
+    progress(0, len(watermark_bin))
     for ii in range(0, len(watermark_bin)):
         bit = 1 if watermark_bin[ii] == "1" else 0
 
@@ -95,7 +95,7 @@ def dss_apply(file: str, wmkFile: str, skey: int, outputFile: str, sound, alpha:
 
                 # Re-converting modified int to bytes
                 write_temp += byte_int.to_bytes(sample_size, "little")
-
+            progress(ii, len(watermark_bin))
     # Writing the modified bytes in sound frames
     sound_new.writeframes(write_temp)
     

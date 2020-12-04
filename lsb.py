@@ -3,7 +3,7 @@ import time
 from utils import *
 
 masks = {0: 0xFE, 1: 0xFD, 2: 0xFB, 3: 0xF7}
-ENDTAG = "00000000"
+ENDTAG = "11110000111100001111111100000000"
 
 
 def lsb_apply(file: str, wmkFile: str, key: list, repeat: bool, outputFile: str, sound):
@@ -25,7 +25,7 @@ def lsb_apply(file: str, wmkFile: str, key: list, repeat: bool, outputFile: str,
 
     sound_new = wave.open(outputFile, 'w')
     sound_new.setparams(sound.getparams())
-
+    progress(0, nframes)
     for i in range(0, nframes):
         # Reads current sound frame
         currentFrame = sound.readframes(1)
@@ -43,8 +43,9 @@ def lsb_apply(file: str, wmkFile: str, key: list, repeat: bool, outputFile: str,
         water_cursor = (water_cursor + 1)
         if repeat:
             water_cursor = water_cursor % len(watermark_bin)
+        progress(i, nframes)
 
-    print("---- STATS ----")
+    print("\n---- STATS ----")
     nbchannels = sound.getparams()[0]
     ratio = 8*nbchannels
     print("Carriage:\t" + str(len(watermark_bin)) + " bits")
@@ -81,17 +82,19 @@ def lsb_decode(limit: int, sound, key: list):
     watermark = ""
     if(limit == 0):
         limit = sound.getnframes()
-
+    progress(0, limit)
     for i in range(0, limit):
         currentFrame = sound.readframes(1)
         keyval = i % len(key)
         
         # We get the random mapped bit using the same mask
         bit = (currentFrame[0] >> key[keyval]) % 2
+        
         bin_str += str(bit)
         
-        if bin_str[-8:] == ENDTAG:
+        if bin_str[-16:] == ENDTAG:
             break
+        progress(i, limit)
 
     # Bin to STRING:
     byte_list = []

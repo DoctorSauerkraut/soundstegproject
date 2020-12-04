@@ -1,5 +1,5 @@
 import hashlib
-
+import sys
 
 def wmkToBin(wmkFile: str, sound):
     """
@@ -20,7 +20,7 @@ def wmkToBin(wmkFile: str, sound):
     return watermark_bin
 
     
-def text_from_bits(bits):
+def bytes_from_bits(bits):    
     n = int(''.join(map(str, bits)), 2)
     return (n.to_bytes((n.bit_length() + 7) // 8, 'big').decode()[2:])[:-2]
 
@@ -28,7 +28,10 @@ def evaluateBrute(file: str, skey: int):
     """ Evaluate the required time to perform a bruteforce
     attack on a given file encoded with dss"""
 
-
+def getSize(fileobject):
+    fileobject.seek(0,2) # move the cursor to the end of the file
+    size = fileobject.tell()
+    return size
 
 def writeBinaryWmkFile(wmk, outputFile):
     """
@@ -38,7 +41,7 @@ def writeBinaryWmkFile(wmk, outputFile):
     f = open(fileName, "wb+")
     f.write(wmk)
     f.close()
-    print("Watermark written in "+fileName)
+    print("\nWatermark written in "+fileName)
 
 
 def compareFiles(inputFileA, inputFileB):
@@ -78,7 +81,7 @@ def compareFiles(inputFileA, inputFileB):
         cB = fileB.read(1)
         sha1a.update(cA)
         sha1b.update(cB)
-        
+
     ratio = bitdiff * 100 / (byteTot*8)
     ratioWght = weightDiff * 100 / weightTot
 
@@ -118,3 +121,13 @@ def decodeKeyFile(keyFile):
         key = key + [int(rawKey[i])]
 
     return key
+
+def progress(count, total, suffix=''):
+    bar_len = 60
+    filled_len = int(round(bar_len * count / float(total)))
+
+    percents = round(100.0 * count / float(total), 1)
+    bar = '=' * filled_len + '-' * (bar_len - filled_len)
+
+    sys.stdout.write('[%s] %s%s ...%s\r' % (bar, percents, '%', suffix))
+    sys.stdout.flush()
