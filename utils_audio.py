@@ -203,6 +203,7 @@ def encodeInSound(fileBasename, signal,wmkFile,**kwargs):
 
     if(algo == "DSS"):
         dss_apply(fileBasename[:-4], wmkFile, seedkey, fileBasename[:-4] + '-DSS_alpha' + str(alphaDSS) + '.wav', signal, alphaDSS)
+
     elif(algo == "LSB"):
         key = decodeKeyFile(keyFile)
         lsb_apply(fileBasename[:-4], wmkFile, key, True, fileBasename[:-4] + '-LSB_repeat' + str(repeat) + '.wav', signal)
