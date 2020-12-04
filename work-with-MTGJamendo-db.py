@@ -11,14 +11,14 @@ import glob
 import time
 import wave
 
-from utils_audio import mp3_to_wav, copySounds_MTG, encodeInSound
+from utils_audio import mp3_to_wav, copySounds_MTG, encodeInSound, selectSounds_MTG
 
 ###################################
 def main():
     ###################################
     # FLAGS
-    sound_selection = 0 # use to browse the data base and collect the sounds we want (may be run only once)
-    convert_format = 0 # use to convert selected sounds from mp3 to wav, if needed
+    sound_selection = 1 # use to browse the data base and collect the sounds we want (may be run only once)
+    convert_format = 1 # use to convert selected sounds from mp3 to wav, if needed
     encode = 1 # use to encode the files from a given directory
     verbose = 0 # verbose mode for some functions
 
@@ -36,9 +36,9 @@ def main():
     ###################################
     # OTHER PARAMETERS
     # --- these ones for browsing the db and selecting files
-    my_genre = 'metal'
+    my_genre = 'jazz'
     min_dur = 10# in seconds
-    max_dur = 15# in seconds
+    max_dur = 100# in seconds
     dest_dir_selected_sounds = '/home/arthur/ISEN/Recherche/Stegano/work/db/MTG-Jamendo/working-dir/'
     # --- these ones for loading and encoding
     encode_source_dir = '/home/arthur/ISEN/Recherche/Stegano/work/db/MTG-Jamendo/working-dir/'
@@ -46,7 +46,7 @@ def main():
     wmkFile_dir = '/home/arthur/ISEN/Recherche/Stegano/work/'
     wmkFile = 'watermark_test'
     keyFile = 'key_test'
-    encoding_alg = 'LSB' # 'DSS' 'LSB'
+    #encoding_alg = 'LSB' # 'DSS' 'LSB'
 
     if sound_selection:
         print('---- scanning database ----')
@@ -59,15 +59,21 @@ def main():
         mp3_to_wav(dest_dir_selected_sounds, rm_mp3=1) #/!\ will remove the mp3 files once converted to wav
 
     if encode:
-        print('---- encoding with ' + encoding_alg + ' ----')
         for filename in glob.glob(encode_source_dir + '*.wav'):
-            if filename.find('_watermarked_') == -1: # don't process files already watermarked (may be removed in future versions)
+            if (filename.find('-DSS') == -1) and (filename.find('-LSB') == -1): # don't process files already watermarked (may be removed in future versions)
                 print('Processing file ' + str(filename))
-                encodeInSound(filename,wmkFile_dir+wmkFile,algo=encoding_alg,keyFile=wmkFile_dir+keyFile)
-                #signal = audioread.audio_open(inputdir + filename)
-                #signal, sr = librosa.load(filename)
-                #plt.plot(signal)
-                #plt.show()
+                sound = wave.open(filename[:-4] + '.wav', 'r')
+                for encoding_alg in ['LSB','DSS']:
+                    if encoding_alg == 'DSS':
+                        SEEDKEY = 1
+                        for ALPHA in [1,5,10,50,100,500,1000,5000]:
+                            print('---- encoding with ' + encoding_alg + ' ----')
+                            encodeInSound(filename,sound,wmkFile_dir+wmkFile,algo=encoding_alg,alphaDSS=ALPHA, seedkey=SEEDKEY)
+                    elif encoding_alg == 'LSB':
+                        for REPEAT in [False, True]:
+                            print('---- encoding with ' + encoding_alg + ' ----')
+                            encodeInSound(filename,sound,wmkFile_dir+wmkFile,algo=encoding_alg,repeat=REPEAT,keyFile=wmkFile_dir+keyFile)
+
 
     return 0
 
