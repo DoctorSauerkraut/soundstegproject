@@ -66,7 +66,7 @@ def main():
                 for encoding_alg in ['LSB','DSS']:
                     if encoding_alg == 'DSS':
                         SEEDKEY = 1
-                        for ALPHA in [1,5,10,50,100]:
+                        for ALPHA in [1,5,10,50,100,500,1000,5000]:
                             print('---- encoding with ' + encoding_alg + ' ----')
                             encodeInSound(filename,sound,wmkFile_dir+wmkFile,algo=encoding_alg,alphaDSS=ALPHA, seedkey=SEEDKEY)
                     elif encoding_alg == 'LSB':
