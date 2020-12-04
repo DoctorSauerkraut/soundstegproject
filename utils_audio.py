@@ -1,3 +1,9 @@
+###################################
+# LOAD MODULES
+import sys
+sys.path.append('/home/arthur/ISEN/Recherche/Stegano/work/db/MTG-Jamendo/mtg-jamendo-dataset/scripts/')
+import commons
+
 import glob
 import os
 import pandas as pd
@@ -38,12 +44,8 @@ def selectSounds_FMA(input_dir, input_file, genre_dir, genre_catalog, **kwargs):
 
     # --- convert genre to numeric value
     genres_list = pd.read_csv(genre_dir+genre_catalog)
-    print(genres_list)
     #genre_id = str(int(np.array(genres_list.where(genres_list['title']==genre).dropna(how='all').dropna(axis=1))[0]))
     genre_id = int(np.array(genres_list['genre_id'][genres_list.where(genres_list['title']==genre).dropna(how='all').dropna(axis=1).index]))
-
-    print(genre_id)
-    print(genre)
 
     # --- load metadata
     tracks = utilsFMA.load(input_dir + 'tracks.csv')
@@ -174,15 +176,35 @@ def copySounds_MTG(list_keys_to_files,catalog,source_dir,destination_dir, **kwar
     print('There were ' + str(nb_sounds_copied) + ' sounds found and copied')
     return 0
 
-
 ###################################
-def encodeInSound(fileName,wmkFile,**kwargs): # free adaptation from of Olive's committed version on github of "main.py" on master branch
+def encodeInSound_old(fileName,wmkFile,**kwargs):
 
     algo=kwargs.get('algo', 'LSB')
     keyFile=kwargs.get('keyFile','/home/arthur/ISEN/Recherche/Stegano/work/key_test')
-    
+    alphaDSS=kwargs.get('alphaDSS',1)
+    keyDSS=kwargs.get('seedkey',4)
+
     if(algo == "DSS"):
-        a = dss_apply(fileName[:-4], wmkFile, 42, 4096)
+        a = dss_apply(fileName[:-4], wmkFile, keyDSS, alphaDSS, 4096) # old version
     elif(algo == "LSB"):
         key = decodeKeyFile(keyFile)
         lsb_apply(fileName[:-4], wmkFile, key, False)
+
+    return 0
+
+###################################
+def encodeInSound(fileBasename, signal,wmkFile,**kwargs):
+
+    algo=kwargs.get('algo', 'LSB')
+    keyFile=kwargs.get('keyFile','/home/arthur/ISEN/Recherche/Stegano/work/key_test')
+    alphaDSS=kwargs.get('alphaDSS',1)
+    seedkey=kwargs.get('seedkey',0)
+    repeat=kwargs.get('repeat',False)
+
+    if(algo == "DSS"):
+        dss_apply(fileBasename[:-4], wmkFile, seedkey, fileBasename[:-4] + '-DSS_alpha' + str(alphaDSS) + '.wav', signal, alphaDSS)
+    elif(algo == "LSB"):
+        key = decodeKeyFile(keyFile)
+        lsb_apply(fileBasename[:-4], wmkFile, key, True, fileBasename[:-4] + '-LSB_repeat' + str(repeat) + '.wav', signal)
+    
+    return 0
