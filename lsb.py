@@ -9,8 +9,12 @@ ENDTAG = "00000000"
 def lsb_apply(file: str, wmkFile: str, key: list, repeat: bool, outputFile: str, sound):
     """
     Hides a watermark inside an input wav file
-    :param file: input audio file
-    :param watermark: watermark string
+    :param file : Raw name (without extension)
+    :param wmkFile : watermark string
+    :param key : 0
+    :param repeat : should the tag be repeated
+    :param outputFile : output audio file
+    :param sound : sound object
     """
     watermark_bin = wmkToBin(wmkFile, sound) + ENDTAG
     nframes = sound.getnframes()

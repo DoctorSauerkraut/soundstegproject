@@ -1,11 +1,11 @@
-"""
-Applying random mapping LSB on a wav file
-For regular LSB : put '0' in the key file
-"""
+#!/usr/bin/env python3
+# TODO : Refactoring main
+# TODO : Solving diff problems
 
 import sys 
 import time
 import wave
+import argparse
 
 from pysndfx import AudioEffectsChain
 
@@ -14,55 +14,88 @@ from lsb import lsb_apply, lsb_read, getnframes, lsb_decode
 from spreadspectrum import dss_apply, dss_read
 
 
-# Entry point
-if __name__ == "__main__":
-    startTime = time.time_ns()
+def apply_tag(algo: str, fileName, wmkFile, keyFile=None):
+    sound = wave.open(fileName + '.wav', 'r')  # lecture d'un fichier audio
+    outputFile = fileName + "_watermarked_"+algo+".wav"
+    print("---- WRITING WITH "+algo+" ----")
+    print("Output file:\t"+outputFile)    
 
-    action = sys.argv[1]
-    algo = sys.argv[2]
-    fileName = sys.argv[3]
-  
+    if(algo == "DSS"):
+        a = dss_apply(fileName, wmkFile, 42, outputFile, sound, 500)
+    elif(algo == "LSB"):
+        if(keyFile is None):
+            print("Please specify keyfile with -k")
+            return
+        key = decodeKeyFile(keyFile)
+        lsb_apply(fileName, wmkFile, key, False, outputFile, sound)
+    else:
+        print("No algo specified or algorithm not recognized")
+        return
+
+
+def read_tag(algo, fileName, keyFile=None):
+    if(algo == "DSS"):
+        wmk = dss_read(fileName, 42, 4136)
+    elif(algo == "LSB"):
+        if(keyFile is None):
+            print("Please specify keyfile with -k")
+            return
+        key = decodeKeyFile(keyFile)
+        wmk = lsb_read(fileName, key, 0)
+
+    return wmk
+
+# Entry point
+def main():
+    startTime = time.time_ns()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("action", help="write mode(w), read mode(r), compare mode(cmp)")
+    parser.add_argument("-i", "--input", help="Input sound file to tag")
+    parser.add_argument("-w", "--watermark", help="Text file containing the tag message")
+    parser.add_argument("-a", "--algo", help="Stegano algorithm to use")
+    parser.add_argument("-k", "--key", help="Keyfile (for LSB)")
+    parser.add_argument("-fa", "--filea", help="First file to compare (cmp mode)")
+    parser.add_argument("-fb", "--fileb", help="Second file to compare (cmp mode)")
+    args = parser.parse_args()
+
+    action = args.action
+    algo = args.algo
+
     if(action == 'r'):
+        if(not args.algo):
+            print("Please specify algorithm to use with -a")
+            return 
+        if(not args.input):
+            print("Please specify input file raw name with -i")
+            return
         print("---- READING WITH "+algo+" ----")
         wmk = ""
-        if(algo == "DSS"):
-            wmk = dss_read(fileName, 42, 4136)
-        elif(algo == "LSB"):
-            keyFile = sys.argv[4]
-            key = decodeKeyFile(keyFile)
-            wmk = lsb_read(fileName, key, 0)
+        if(args.key):
+            read_tag(args.algo, args.input, args.key)
+        else:
+            read_tag(args.algo, args.input)
 
     elif(action == 'w'):
-        print("---- WRITING WITH "+algo+" ----")
-        wmkFile = sys.argv[4]
-
-        sound = wave.open(fileName + '.wav', 'r')  # lecture d'un fichier audio
-        outputFile = fileName + "_watermarked_"+algo+".wav"
-
-        print("Output file:\t"+outputFile)
-
-        if(algo == "DSS"):
-            a = dss_apply(fileName, wmkFile, 42, outputFile, sound, 500)
-        elif(algo == "LSB"):
-            keyFile = sys.argv[5]
-            key = decodeKeyFile(keyFile)
-            lsb_apply(fileName, wmkFile, key, False, outputFile, sound)    
-
-    elif(action == 'a'):
-        print("--- ATTACKING ----")
-        fx = (
-            AudioEffectsChain()
-            .reverb()
-            .delay()
-        )
-        outfile = fileName + "_del.wav"
-
-        # Apply effect
-        fx(fileName + ".wav", outfile)
+        if(not args.algo):
+            print("Please specify algorithm to use with -a")
+            return 
+        if(not args.watermark):
+            print("Please specify watermark file with -w")
+            return 
+        if(not args.input):
+            print("Please specify input file raw name with -i")
+            return
+        else:    
+            if (args.key):
+                apply_tag(args.algo, args.input, args.watermark, args.key)   
+            else:
+                apply_tag(args.algo, args.input, args.watermark)
 
     elif(action == 'cmp'):
-        fileNameB = sys.argv[2]
-        compareFiles(fileName, fileNameB)
+        if(not args.file or not args.fileb):
+            print("Please specify files to compare with --fa and --fb")
+            return 
+        compareFiles(args.filea, args.fileb)
 
     elif(action == 'e'):
         charsize = 1000
@@ -82,7 +115,9 @@ if __name__ == "__main__":
             strETime = str(estimatedTime)
 
         elif(algo == "LSB"):
-            keyFile = sys.argv[4]
+            if(not args.key):
+                print("Please specify keyfile with -k")
+                return
             key = decodeKeyFile(keyFile)
             
             fileInput = fileName + '.wav'
@@ -112,3 +147,6 @@ if __name__ == "__main__":
     delta = (endTime - startTime)/1000000000
 
     print("Done in "+str(delta)+" s")
+
+if __name__=="__main__":
+    main()

@@ -56,10 +56,8 @@ def getSize(fileobject):
     return size
 
 def main( argv ):
-
     filename1 = None
     filename2 = None
-    output =    None
     same_size = False
 
     for arg in argv:
@@ -73,18 +71,16 @@ def main( argv ):
                 filename1 = arg
             elif not filename2:
                 filename2 = arg
-            elif not output:
-                output = arg
             else:
                 raise Exception( "Extra argument " + arg ) 
         
 
-    if not filename1 or not filename2 or not output:
-        print( "Usage: JLDiff file1 file2 resultFile [--same_size]" )
+    if not filename1 or not filename2:
+        print( "Usage: JLDiff file1 file2 [--same_size]" )
         exit(1)
 
-    with codecs.open( filename1, 'r', 'utf-8', errors='ignore' ) as fileHandle1:
-        with codecs.open( filename2, 'r', 'utf-8', errors='ignore' ) as fileHandle2:
+    with open( filename1, 'rb') as fileHandle1:
+        with open( filename2, 'rb') as fileHandle2:
             file1 = fileHandle1.read()
             file2 = fileHandle2.read()
 
@@ -155,12 +151,16 @@ def main( argv ):
     currentNode = thisLine[ len(thisLine)-1 ]
     errors = thisIndex.errorCount
 
-    print("Number of errors:"+str(errors))
-    fileSize = getSize(codecs.open( filename1, 'r', 'utf-8', errors='ignore' ))
-    if(errors < fileSize):
-        rate = ((fileSize-errors)*100/fileSize)
+    #print("Number of errors:"+str(errors))
+    file1Size = getSize(open(filename1, 'rb'))
+    file2Size = getSize(open(filename2, 'rb'))
+    sizeRate = 100-(file2Size*100/file1Size)
+
+    if(errors < file1Size):
+        rate = ((file1Size-errors)*100/file1Size)
     else:
         rate = 0
-    print("Similarity rate:"+str(rate)+" %")
+    print("Similarity rate:\t"+str(rate)+" %")
+    print("Size modification rate:\t"+str(sizeRate)+" %")
 if __name__ == "__main__":
     main(sys.argv[1:])

@@ -116,7 +116,7 @@ def dss_apply(file: str, wmkFile: str, skey: int, outputFile: str, sound, alpha:
     return watermark_bin
 
 
-def dss_read(file: str, skey: int, size_watermark: int):
+def dss_decode(file: str, skey: int, size_watermark: int):
     """
     Lit le watermark cache dans un fichier par Direct Spread Spectrum
     :param file: Nom du fichier a decoder (Sans extension)
@@ -149,8 +149,13 @@ def dss_read(file: str, skey: int, size_watermark: int):
 
         watermark_bin += '1' if correlation(cw, pn) < 0 else '0'
 
-    print(text_from_bits(watermark_bin))
+    print(bytes_from_bits(watermark_bin))
     
-    return watermark_bin
+    return bytes_from_bits(watermark_bin)
 
 
+def dss_read(file: str, skey: int, size_watermark: int):
+    watermark = dss_decode(file, skey, size_watermark)
+    writeBinaryWmkFile(watermark, file)
+
+    return watermark
