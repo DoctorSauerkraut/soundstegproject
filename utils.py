@@ -1,5 +1,7 @@
-import hashlib
 import sys
+import time
+
+from dbgprint import *
 
 def wmkToBin(wmkFile: str, sound):
     """
@@ -21,12 +23,12 @@ def wmkToBin(wmkFile: str, sound):
 
     
 def bytes_from_bits(bits):    
-    n = int(''.join(map(str, bits)), 2)
-    return (n.to_bytes((n.bit_length() + 7) // 8, 'big').decode()[2:])[:-2]
+    s = bytes(int(bits[i : i + 8], 2) for i in range(0, len(bits), 8))
+    return s
+    #n = int(''.join(map(str, bits)), 2)
+    #return (n.to_bytes((n.bit_length() + 7) // 8, 'big').decode()[2:])[:-2]
 
-def evaluateBrute(file: str, skey: int):
-    """ Evaluate the required time to perform a bruteforce
-    attack on a given file encoded with dss"""
+
 
 def getSize(fileobject):
     fileobject.seek(0,2) # move the cursor to the end of the file
@@ -41,56 +43,8 @@ def writeBinaryWmkFile(wmk, outputFile):
     f = open(fileName, "wb+")
     f.write(wmk)
     f.close()
-    print("\nWatermark written in "+fileName)
+    dprint("Watermark written in "+fileName, VER)
 
-
-def compareFiles(inputFileA, inputFileB):
-    print("Comparing "+inputFileA+" and "+inputFileB)
-    sha1a = hashlib.sha1()
-    sha1b = hashlib.sha1()
-
-    """
-    Generical file comparison
-    Used to compare the number of common bits between two watermarks
-    """
-    fileA = open(inputFileA, "rb")
-    fileB = open(inputFileB, "rb")
-
-    diff = 0
-    total = 0
-    cA = fileA.read(1)
-    cB = fileB.read(1)
-
-    # Difference by number of bits
-    bitdiff = 0
-    # Total number of bytes
-    byteTot = 1
-    # Total weight
-    weightTot = 1
-    # Difference by weight of bits
-    weightDiff = 0
-
-    while (cA and cB):
-        byteTot = byteTot + 1
-        weightTot = weightTot + 511  # Max weight on 8 bits
-        nbDiff = numberofBitsDiff(cA, cB)
-        bitdiff = bitdiff + nbDiff[0]
-        weightDiff = weightDiff + nbDiff[1]
-
-        cA = fileA.read(1)
-        cB = fileB.read(1)
-        sha1a.update(cA)
-        sha1b.update(cB)
-
-    ratio = bitdiff * 100 / (byteTot*8)
-    ratioWght = weightDiff * 100 / weightTot
-
-    print(str(ratio)+" % bits difference ratio")
-    print(str(ratioWght)+" % weighted difference ratio")
-    print("SHA1 input file:\t"+str(sha1a.hexdigest()))
-    print("SHA1 output file:\t"+str(sha1b.hexdigest()))
-
-    return ratio
 
 def numberofBitsDiff(byteA, byteB):
     """
@@ -115,6 +69,8 @@ def decodeKeyFile(keyFile):
     """
     Converting the key into bit mapping
     """
+    if(keyFile == None):
+        return [0]
     key = []
     rawKey = open(keyFile, "r").readlines()[0]
     for i in range(0, len(rawKey)-1):
@@ -122,12 +78,35 @@ def decodeKeyFile(keyFile):
 
     return key
 
-def progress(count, total, suffix=''):
+
+class Progress:
+    chronoStart = 0
+    chronoEnd = 0
     bar_len = 60
-    filled_len = int(round(bar_len * count / float(total)))
+    task = ""
+    def __init__(self, task):
+        self.chronoStart = 0
+        self.chronoEnd = 0
+        self.task = task
 
-    percents = round(100.0 * count / float(total), 1)
-    bar = '=' * filled_len + '-' * (bar_len - filled_len)
+    def progress(self, count, total, suffix=''):
+        if(count == 0):
+            self.chronoStart = time.time_ns()
+            self.chronoEnd = 0
 
-    sys.stdout.write('[%s] %s%s ...%s\r' % (bar, percents, '%', suffix))
-    sys.stdout.flush()
+        if(count == total):
+            self.chronoEnd = time.time_ns()
+
+        filled_len = int(round(self.bar_len * count / float(total)))
+
+        percents = round(100.0 * count / float(total), 1)
+        bar = '#' * filled_len + '-' * (self.bar_len - filled_len)
+
+        if(self.chronoStart != 0 and self.chronoEnd != 0):
+            delta = int((self.chronoEnd - self.chronoStart)/10000000)/100
+            self.chronoEnd = 0
+            self.chronoStart = 0
+            sys.stdout.write(str(self.task)+":\t"+'[%s] %s%s ...%s Done in %s secs\n' % (bar, percents, '%', suffix, delta))
+        else:
+            sys.stdout.write(str(self.task)+":\t"+'[%s] %s%s ...%s\r' % (bar, percents, '%', suffix))
+            sys.stdout.flush()

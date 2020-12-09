@@ -1,4 +1,5 @@
 #!/usr/bin/python
+# DEPRECATED
 
 #Copyright (c) 2016, Joshua Lansford @ LaserLinc
 #All rights reserved.
@@ -27,8 +28,6 @@ from __future__ import with_statement
 from collections import defaultdict
 
 import sys
-import codecs
-import os
 
 from utils import *
 STATE_PASSING_1ST = 0
@@ -51,35 +50,16 @@ def u_intern( value ):
     u_intern_dict[value]=value
     return value
   
-def main( argv ):
-    filename1 = None
-    filename2 = None
-    same_size = False
-
-    for arg in argv:
-        if arg.startswith( "-" ):
-            if arg == "--same_size":
-                same_size = True
-            else:
-                raise Exception( "Unknown arg " + arg )
-        else:
-            if not filename1:
-                filename1 = arg
-            elif not filename2:
-                filename2 = arg
-            else:
-                raise Exception( "Extra argument " + arg ) 
-        
-
-    if not filename1 or not filename2:
-        print( "Usage: JLDiff file1 file2 [--same_size]" )
-        exit(1)
+def compareFiles(filename1, filename2):
+    same_size = False      
     
     file1Size = getSize(open(filename1, 'rb'))
     file2Size = getSize(open(filename2, 'rb'))
     loops = file1Size*file2Size
     prog = 0
-
+    
+    p = Progress("Comparing")
+    p.progress(prog, loops)
     with open( filename1, 'rb') as fileHandle1:
         with open( filename2, 'rb') as fileHandle2:
             file1 = fileHandle1.read()
@@ -118,15 +98,15 @@ def main( argv ):
 
                 columnIndex = 1
                 for char2 in file2:
-                    progress(prog,loops)
+                    p.progress(prog, loops)
                     prog = prog+1
 
                     thisIndex = lineCompIndex()
 
                     if(char2 == char1):
                         thisIndex.previous = lastLine[ columnIndex-1]
-                        #To keep from getting speriouse single matches,
-                        #see about adding some error in for the first matches.
+                        # To keep from getting speriouse single matches,
+                        # See about adding some error in for the first matches.
                         if thisIndex.previous.state == STATE_MATCH:
                             thisIndex.errorCount = thisIndex.previous.errorCount
                         else:
@@ -148,14 +128,13 @@ def main( argv ):
 
                     thisLine.append(thisIndex)
                     columnIndex += 1
-
-
+    p.progress(loops, loops)
 
     backwardsList = []
     currentNode = thisLine[ len(thisLine)-1 ]
     errors = thisIndex.errorCount
 
-    #print("Number of errors:"+str(errors))
+    dprint("Number of errors:"+str(errors), DBG)
     file1Size = getSize(open(filename1, 'rb'))
     file2Size = getSize(open(filename2, 'rb'))
     sizeRate = 100-(file2Size*100/file1Size)
@@ -164,7 +143,8 @@ def main( argv ):
         rate = ((file1Size-errors)*100/file1Size)
     else:
         rate = 0
-    print("Similarity rate:\t"+str(rate)+" %")
-    print("Size modification rate:\t"+str(sizeRate)+" %")
-if __name__ == "__main__":
-    main(sys.argv[1:])
+    dprint("---- COMPARISON RESULTS ----", NOR)
+    dprint("Similarity rate:\t"+str(rate)+" %", NOR)
+    dprint("Size modification rate:\t"+str(sizeRate)+" %", NOR)
+    
+    return rate

@@ -3,8 +3,8 @@ import time
 from utils import *
 
 masks = {0: 0xFE, 1: 0xFD, 2: 0xFB, 3: 0xF7}
-ENDTAG = "11110000111100001111111100000000"
-
+STATAG = "010100110101010001000001" #STA 
+ENDTAG = "010001010100111001000100" #END
 
 def lsb_apply(file: str, wmkFile: str, key: list, repeat: bool, outputFile: str, sound):
     """
@@ -16,7 +16,7 @@ def lsb_apply(file: str, wmkFile: str, key: list, repeat: bool, outputFile: str,
     :param outputFile : output audio file
     :param sound : sound object
     """
-    watermark_bin = wmkToBin(wmkFile, sound) + ENDTAG
+    watermark_bin = STATAG + wmkToBin(wmkFile, sound) + ENDTAG
     nframes = sound.getnframes()
 
     sound.setpos(0)
@@ -25,7 +25,8 @@ def lsb_apply(file: str, wmkFile: str, key: list, repeat: bool, outputFile: str,
 
     sound_new = wave.open(outputFile, 'w')
     sound_new.setparams(sound.getparams())
-    progress(0, nframes)
+    p = Progress("Applying tag")
+    p.progress(0, nframes)
     for i in range(0, nframes):
         # Reads current sound frame
         currentFrame = sound.readframes(1)
@@ -43,17 +44,17 @@ def lsb_apply(file: str, wmkFile: str, key: list, repeat: bool, outputFile: str,
         water_cursor = (water_cursor + 1)
         if repeat:
             water_cursor = water_cursor % len(watermark_bin)
-        progress(i, nframes)
+        p.progress(i, nframes)
+    p.progress(nframes, nframes)
 
-    print("\n---- STATS ----")
+    dprint("\n---- STATS ----", VER)
     nbchannels = sound.getparams()[0]
     ratio = 8*nbchannels
-    print("Carriage:\t" + str(len(watermark_bin)) + " bits")
-    print("Max carriage:\t1 bit/" + str(ratio) + "=" + str(nframes)+ " bits")
-    print("Mod. frames:\t" + str(modifiedFrames))
-    print("Mod. bits:\t" + str(modifiedFrames*nbchannels)) 
+    dprint("Carriage:\t" + str(len(watermark_bin)) + " bits", VER)
+    dprint("Max carriage:\t1 bit/" + str(ratio) + "=" + str(nframes)+ " bits", VER)
+    dprint("Mod. frames:\t" + str(modifiedFrames), VER)
+    dprint("Mod. bits:\t" + str(modifiedFrames*nbchannels), VER) 
     diffRatio = (modifiedFrames*100/(nframes*8))
-    compareFiles(file + '.wav', outputFile)  
 
     return watermark_bin
 
@@ -82,7 +83,9 @@ def lsb_decode(limit: int, sound, key: list):
     watermark = ""
     if(limit == 0):
         limit = sound.getnframes()
-    progress(0, limit)
+    p = Progress("Decoding tag")
+    p.progress(0, limit)
+
     for i in range(0, limit):
         currentFrame = sound.readframes(1)
         keyval = i % len(key)
@@ -92,9 +95,21 @@ def lsb_decode(limit: int, sound, key: list):
         
         bin_str += str(bit)
         
-        if bin_str[-16:] == ENDTAG:
+        if bin_str[-len(ENDTAG):] == ENDTAG:
             break
-        progress(i, limit)
+        p.progress(i, limit)
+    p.progress(limit, limit)
+
+    limit = len(bin_str)
+    ps = Progress("Seeking")
+    ps.progress(0, limit)
+    while(bin_str[0:len(STATAG)] != STATAG):
+        bin_str = bin_str[1:]
+        ps.progress(limit-len(bin_str), limit)
+    
+        if(len(bin_str) < len(STATAG)):
+            return bytes([])
+    ps.progress(limit, limit)  
 
     # Bin to STRING:
     byte_list = []
@@ -117,7 +132,7 @@ def lsb_read(file: str, key: list, limit: int):
     fileInput = file + '.wav'
     sound = wave.open(fileInput, 'r')  # lecture d'un fichier audio
     sound.setpos(0)
-    print("Opening "+fileInput)
+    dprint("Opening "+fileInput, VER)
 
     # Recreating the watermark
     watermark = lsb_decode(limit, sound, key)

@@ -59,7 +59,9 @@ def dss_apply(file: str, wmkFile: str, skey: int, outputFile: str, sound, alpha:
 
     sound_new = wave.open(outputFile, 'w')
     sound_new.setparams(sound.getparams())
-    progress(0, len(watermark_bin))
+    p = Progress("Applying tag")
+    p.progress(0, len(watermark_bin))
+
     for ii in range(0, len(watermark_bin)):
         bit = 1 if watermark_bin[ii] == "1" else 0
 
@@ -95,24 +97,25 @@ def dss_apply(file: str, wmkFile: str, skey: int, outputFile: str, sound, alpha:
 
                 # Re-converting modified int to bytes
                 write_temp += byte_int.to_bytes(sample_size, "little")
-            progress(ii, len(watermark_bin))
+            p.progress(ii, len(watermark_bin))
+    p.progress(len(watermark_bin), len(watermark_bin))
+
     # Writing the modified bytes in sound frames
     sound_new.writeframes(write_temp)
     
     # Writing the unmodified frames
     sound_new.writeframes(sound.readframes(sound.getnframes() - (bloc_size * len(watermark_bin))))
 
-    print("--- STATS ---")
+    dprint("--- STATS ---", VER)
     nframes = sound.getnframes()
     maxcarriage = int(nframes*16/(channel_count))
     modifiedFrames = nframes * channel_count * bloc_size
     diffRatio = (modifiedFrames*100/(nframes*8))
 
-    print("Carriage:\t" + str(len(watermark_bin)) + " bits")
-    print("Max carriage:\t" + str(maxcarriage) + " bits")
-    print("Mod. frames:\t" + str(modifiedFrames))
-    print("Mod. bits:\t" + str(modifiedFrames*channel_count)) 
-    compareFiles(file+".wav", outputFile)
+    dprint("Carriage:\t" + str(len(watermark_bin)) + " bits", VER)
+    dprint("Max carriage:\t" + str(maxcarriage) + " bits", VER)
+    dprint("Mod. frames:\t" + str(modifiedFrames), VER)
+    dprint("Mod. bits:\t" + str(modifiedFrames*channel_count), VER) 
     return watermark_bin
 
 
@@ -126,7 +129,7 @@ def dss_decode(file: str, skey: int, size_watermark: int):
     inputFile = file + '.wav'
     sound = wave.open(inputFile, 'r')  # lecture d'un fichier audio
 
-    print("Extracting from "+inputFile+" with DSS")
+    dprint("Extracting from "+inputFile+" with DSS", VER)
     sample_size = sound.getsampwidth()
 
     sound.setpos(0)
@@ -135,8 +138,10 @@ def dss_decode(file: str, skey: int, size_watermark: int):
     random.seed(skey)
 
     watermark_bin = ''
+    p = Progress("Decoding tag")
+    p.progress(0, size_watermark)
 
-    for _ in range(0, size_watermark):
+    for i in range(0, size_watermark):
         pseudonoise = [random.randint(0, 1) for j in range(0, bloc_size)]
 
         # Recup Big sample
@@ -148,10 +153,11 @@ def dss_decode(file: str, skey: int, size_watermark: int):
             pn += [2 * pseudonoise[i] - 1]
 
         watermark_bin += '1' if correlation(cw, pn) < 0 else '0'
-
-    print(bytes_from_bits(watermark_bin))
+        p.progress(i, size_watermark)
     
-    return bytes_from_bits(watermark_bin)
+    rst = str.encode(watermark_bin)
+    p.progress(size_watermark, size_watermark)
+    return rst
 
 
 def dss_read(file: str, skey: int, size_watermark: int):

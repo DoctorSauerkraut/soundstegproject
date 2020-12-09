@@ -6,57 +6,77 @@ import wave
 import argparse
 import os
 
-from utils import compareFiles, decodeKeyFile
+from diff import *
+from utils import *
 from lsb import lsb_apply, lsb_read, getnframes, lsb_decode
 from spreadspectrum import dss_apply, dss_read
-
+from echohiding import *
 
 def apply_tag(algo: str, fileName, wmkFile, keyFile=None):
     sound = wave.open(fileName + '.wav', 'r')  # lecture d'un fichier audio
-    outputFile = fileName + "_watermarked_"+algo+".wav"
-    print("---- WRITING WITH "+algo+" ----")
-    print("Input file:\t\t"+fileName+".wav")
-    print("Output file:\t"+outputFile)    
-    print("Watermark file:\t"+wmkFile)
+
+    path = fileName[0:fileName.rfind("/")+1]
+    dprint(path, DBG)
+    fileraw = fileName[fileName.rfind("/")+1:]
+    dprint(fileraw, DBG)
+
+    outputFile = path + "output/" + fileraw + "_watermarked_"+algo+".wav"
+    dprint("---- WRITING WITH "+algo+" ----", VER)
+    dprint("Input file:\t"+fileName+".wav", VER)
+    dprint("Output file:\t"+outputFile, VER)    
+    dprint("Watermark file:\t"+wmkFile, VER)
     
     if(algo == "DSS"):
         a = dss_apply(fileName, wmkFile, 42, outputFile, sound, 500)
     elif(algo == "LSB"):
         if(keyFile is None):
-            key = "0"
-        key = decodeKeyFile(keyFile)
+            key = [0]
+        else:
+            key = decodeKeyFile(keyFile)
         lsb_apply(fileName, wmkFile, key, False, outputFile, sound)
+    elif(algo == "ECHO"):
+        echo_single_apply(fileName, wmkFile, outputFile, 0.1, 128, 256, 1024, False)
     else:
-        print("No algo specified or algorithm not recognized")
+        dprint("No algo specified or algorithm not recognized", ERR)
         return
 
 
 def read_tag(algo, fileName, keyFile=None):
+    dprint("---- READING WITH "+algo+" ----", VER)
+
     if(algo == "DSS"):
         wmk = dss_read(fileName, 42, 4136)
     elif(algo == "LSB"):
         if(keyFile is None):
-            print("Please specify keyfile with -k")
-            return
+            dprint("No key specified, running LSB basic mode", VER)
         key = decodeKeyFile(keyFile)
         wmk = lsb_read(fileName, key, 0)
-
+    elif(algo=="ECHO"):
+        wmk = echo_decode(fileName, 128, 256, 1024)
     return wmk
 
-def attack_signal(inputFile, outputFile):
+def attack_signal(inputFile, outputFile, atkType):
     """
     Applies a specific effect on a music file
     :param inputFile : file to apply effect on
     :param outputFile : modified file
     """
-    print("---- Attacking signal with echo effect ----")
-    print("Input file:\t\t"+inputFile)
-    print("Output file:\t"+outputFile)
+    attackList = ["trim"]
+    if(atkType not in attackList):
+        dprint("Unknown attack. Please choose among these available attacks:"+str(attackList), ERR)
+        return
 
-    atk = "echo 0.1 0.1 1 0.1"
+    dprint("---- Attacking signal with "+str(atkType)+ " ----", VER)
+    dprint("Input file:\t"+inputFile, VER)
+    dprint("Output file:\t"+outputFile, VER)
 
-    cmd = "sox "+inputFile+" "+outputFile+" "+atk
-    os.system(cmd)
+    #atk = "echo 0.1 0.1 1 0.1"
+    if(atkType == "trim"):
+        dprint("Trimming 3:00", VER)
+        atk = "trim 0 3:00"
+        cmd = "sox "+inputFile+" "+outputFile+" "+atk
+
+        os.system(cmd)
 
 
 # Entry point
@@ -70,6 +90,7 @@ def main():
     parser.add_argument("-k", "--key", help="Keyfile (for LSB)")
     parser.add_argument("-fa", "--filea", help="First file to compare (cmp mode)")
     parser.add_argument("-fb", "--fileb", help="Second file to compare (cmp mode)")
+    parser.add_argument("-t", "--type", help="Attack type (atk mode)")
     args = parser.parse_args()
 
     action = args.action
@@ -77,12 +98,11 @@ def main():
 
     if(action == 'r'):
         if(not args.algo):
-            print("Please specify algorithm to use with -a")
+            dprint("Please specify algorithm to use with -a", ERR)
             return 
         if(not args.input):
-            print("Please specify input file raw name with -i")
+            dprint("Please specify input file raw name with -i", ERR)
             return
-        print("---- READING WITH "+algo+" ----")
         wmk = ""
         if(args.key):
             read_tag(args.algo, args.input, args.key)
@@ -91,13 +111,13 @@ def main():
 
     elif(action == 'w'):
         if(not args.algo):
-            print("Please specify algorithm to use with -a")
+            dprint("Please specify algorithm to use with -a", ERR)
             return 
         if(not args.watermark):
-            print("Please specify watermark file with -w")
+            dprint("Please specify watermark file with -w", ERR)
             return 
         if(not args.input):
-            print("Please specify input file raw name with -i")
+            dprint("Please specify input file raw name with -i", ERR)
             return
         else:    
             if (args.key):
@@ -106,29 +126,35 @@ def main():
                 apply_tag(args.algo, args.input, args.watermark)
 
     elif(action == 'cmp'):
-        if(not args.file or not args.fileb):
-            print("Please specify files to compare with --fa and --fb")
+        if(not args.filea or not args.fileb):
+            errprint("Please specify files to compare with --fa and --fb")
             return 
-        compareFiles(args.filea, args.fileb)
+
+        rate = compareFiles(args.filea, args.fileb)
+        logResult(str(rate)+"\t")
+
     elif(action == 'atk'):
         if(not args.input):
-            print("Please specify input file raw name with -i")
+            errprint("Please specify input file raw name with -i")
+            return
+        if(not args.type):
+            errprint("Please specify an attack type with -t")
             return
         inputFile = args.input + '.wav'
-        outputFile = args.input + "_atk_echo.wav"
+        outputFile = args.input + "_atk.wav"
 
-        attack_signal(inputFile, outputFile)
-
-    elif(action == 'e'):
+        attack_signal(inputFile, outputFile, args.type)
+    
+    elif(action == 'brute'):
         charsize = 1000
-        print("--- EVALUATING REQUIRED TIME TO BRUTEFORCE "+str(charsize)+" CHARACTERS FOR ALGO "+algo+" ----")
+        dprint("--- EVALUATING REQUIRED TIME TO BRUTEFORCE "+str(charsize)+" CHARACTERS FOR ALGO "+algo+" ----", VER)
         if(algo == "DSS"):
             i = charsize * 8 
             evalTimeStart = time.time_ns()
             try:
                 dss_read(fileName, 42, i)
             except UnicodeDecodeError:
-                print("Unicode Error")
+                errprint("Unicode Error")
 
             evalTimeEnd = time.time_ns()
             evalTimeDelta = evalTimeEnd - evalTimeStart
@@ -138,7 +164,7 @@ def main():
 
         elif(algo == "LSB"):
             if(not args.key):
-                print("Please specify keyfile with -k")
+                errprint("Please specify keyfile with -k")
                 return
             key = decodeKeyFile(keyFile)
             
@@ -147,7 +173,7 @@ def main():
             # Input audio file reading
             sound = wave.open(fileInput, 'r')  
             sound.setpos(0)
-            print("Opening "+fileInput)
+            dprint("Opening "+fileInput, VER)
 
             for i in range(0, 10):
                 evalTimeStart = time.time_ns()
@@ -155,20 +181,20 @@ def main():
                 watermark = lsb_decode(1, sound, key)
                 evalTimeEnd = time.time_ns()
 
-            print("Key length:"+str(len(key)))
-            print("Key maximal bit:"+str(max(key)))
+            dprint("Key length:"+str(len(key)), VER)
+            dprint("Key maximal bit:"+str(max(key)), VER)
             evalTimeDelta = (evalTimeEnd - evalTimeStart)/10
             evalTimeDelta = evalTimeDelta*(4**(len(key)*max(key)))/1000000000
             
             strETime = str(evalTimeDelta)
 
-        print("Estimated required time : "+strETime+" seconds")    
+        dprint("Estimated required time : "+strETime+" seconds", NOR)    
         
-    print("---- DONE ----")
+    dprint("---- DONE ----", VER)
     endTime = time.time_ns()
     delta = (endTime - startTime)/1000000000
 
-    print("Done in "+str(delta)+" s")
+    dprint("Done in "+str(delta)+" s", VER)
 
 if __name__=="__main__":
     main()
