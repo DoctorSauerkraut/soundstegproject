@@ -2,9 +2,14 @@
 echo "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 echo "xxxxxxxx Welcome to Steg analyzer. xxxxxxxx"
 echo "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+
 echo "This is going to take a while. Why don't you take a coffee :) ?"
 path=$1
 clear
+attack="trim"
+echo "Comparing tag resistance to attack : ${attack}"
+
+rm report.txt
 nametag="watermarked"
 # Listing all wav files (without extension nor path)
 files=$(find ${path} -maxdepth 1 -name '*.wav' | awk -F'/' '{print $NF}' | sed -e "s/\.wav//")
@@ -20,7 +25,7 @@ do
         # Writing a tag
         ./main.py -i ${path}$file -a $alg -w ../input w
         # Attacking the signal
-        ./main.py -i ${path}output/${file}_${nametag}_$alg atk -t trim
+        ./main.py -i ${path}output/${file}_${nametag}_$alg atk -t ${attack}
         # Reading from initial file
         ./main.py -i ${path}output/${file}_${nametag}_${alg} -a $alg r
         # Reading from attacked file

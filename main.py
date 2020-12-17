@@ -83,7 +83,7 @@ def attack_signal(inputFile, outputFile, atkType):
 def main():
     startTime = time.time_ns()
     parser = argparse.ArgumentParser()
-    parser.add_argument("action", help="write mode(w), read mode(r), compare mode(cmp)")
+    parser.add_argument("action", help="write mode(w), read mode(r), compare mode(cmp), attack mode(atk), evaluate mode(brute)")
     parser.add_argument("-i", "--input", help="Input sound file to tag")
     parser.add_argument("-w", "--watermark", help="Text file containing the tag message")
     parser.add_argument("-a", "--algo", help="Stegano algorithm to use")

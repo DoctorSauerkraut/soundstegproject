@@ -232,27 +232,34 @@ def echo_decode(file: str, delay_0: int = 5, delay_1: int = 10, segment_length: 
     channel_count = sound.getnchannels()
     frames_number = sound.getnframes()
 
-    p = Progress("Decoding tag")
-    
+    ps = Progress("Building tag")
+    ps.progress(0, frames_number)
     signalD = []
     for i in range(0, frames_number):
         signalD.append(int.from_bytes(sound.readframes(1)[:sample_size], 'little'))
+        ps.progress(i, frames_number)
+    ps.progress(frames_number, frames_number)
 
+    p = Progress("Decoding tag")
     limit = sound.getnframes()//segment_length
     p.progress(0, limit)
     decoded = ''
     for i in range(0, sound.getnframes()//segment_length):
         fft = np.fft.fft(signalD[segment_length*i:segment_length*(i+1)])
+        
+        # In case of an empty list (corrupted tag)
+        if(str(fft) == "[0.+0.j 0.+0.j 0.+0.j ... 0.+0.j 0.+0.j 0.+0.j]"):
+            break
+
         cepstrum = np.fft.ifft(np.log(np.abs(fft)))
+        dprint(str(fft), DBG)
         #cepstrum[0] = 0
         decoded += '0' if (cepstrum[delay_0] > cepstrum[delay_1]) else '1'
-
-        """plt.figure(figsize=(10, 5))
-        plt.plot(cepstrum[:min(delay_1+delay_0,segment_length)], linewidth=0.5,)
-        plt.show()"""
-        p.progress(i, limit)
         
+        p.progress(i, limit)
+
     rst = str.encode(decoded)
+    writeBinaryWmkFile(rst, file)
     p.progress(limit, limit)
 
     return rst

@@ -27,6 +27,7 @@ def lsb_apply(file: str, wmkFile: str, key: list, repeat: bool, outputFile: str,
     sound_new.setparams(sound.getparams())
     p = Progress("Applying tag")
     p.progress(0, nframes)
+    
     for i in range(0, nframes):
         # Reads current sound frame
         currentFrame = sound.readframes(1)
@@ -44,6 +45,7 @@ def lsb_apply(file: str, wmkFile: str, key: list, repeat: bool, outputFile: str,
         water_cursor = (water_cursor + 1)
         if repeat:
             water_cursor = water_cursor % len(watermark_bin)
+            
         p.progress(i, nframes)
     p.progress(nframes, nframes)
 
