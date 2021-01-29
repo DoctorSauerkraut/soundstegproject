@@ -1,0 +1,99 @@
+body {
+    font-family: 'Lato', sans-serif
+}
+
+h2 {
+    margin-top: 10px
+}
+
+label {
+    color: #333
+}
+
+.btn-send {
+    font-weight: 300;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    width: 80%;
+    margin-left: 3px
+}
+
+.help-block.with-errors {
+    color: #ff5050;
+    margin-top: 5px
+}
+
+.btn-send {
+  background-color: #000;
+   background-image: linear-gradient(125deg,#a72879,#064497);
+  color: #fff;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  font-size: 16px;
+  padding: 10px 16px;
+  border: none;
+  width:200px;
+  cursor: pointer;
+   margin-left: 60px;
+    margin-right: auto;
+}
+
+h1,h2,h3,h4,h5,h6 {
+    font-family:"Josefin Sans",sans-serif;
+    color:#0b1c39;
+    margin-top:0px;
+    font-style:normal;
+    font-weight:500;
+    text-transform:normal;
+}
+
+.wrapper {
+
+  padding: 10px;
+  max-width: 800px;
+
+}
+
+
+.table {
+  margin: 0 0 40px 0;
+  width: 100%;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  display: table;
+}
+
+
+
+.row {
+  display: table-row;
+  background: #f6f6f6;
+
+}
+
+.row:nth-of-type(odd){
+        background: #e9e9e9;
+}
+
+#blue{
+font-weight: 900;
+    color: #ffffff;
+    background: #2980b9;
+}
+
+
+
+.cell {
+  padding: 6px 12px;
+  display: table-cell;
+}
+
+.post-form{
+padding: 12px;
+    width: 320px;
+    background: #2980b9;
+}
+
+.form-fields {
+ margin: 0px;
+ margin-top: 10px;
+}

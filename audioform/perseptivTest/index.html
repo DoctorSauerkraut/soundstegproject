@@ -1,0 +1,16 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html class="supernova"><head>
+
+
+<body>
+<h3>Informations</h3>
+<form method="post" class="post-form">
+  {% csrf_token %}
+  {{form.as_p}}
+      <audio controls>
+        <source src="{% static 'audio/sound1.wav'%}"type="audio/wav">Your browser does not support the audio element.
+      </audio>
+  <button type="submit" class="save btn">Submit</button>
+</form>
+</body>
+</html>
